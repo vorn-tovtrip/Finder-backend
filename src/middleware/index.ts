@@ -1,12 +1,21 @@
-import loggerMiddleware from "./logger";
 import corsMiddleware from "./cors";
 import catchAllErrorMiddleware from "./error";
+import { authMiddleware } from "./jwt/jwt.middleware";
+import loggerMiddleware from "./logger";
 import notFoundMiddleWare from "./notfound";
-export * from "./validation/index";
-export * from "./rate_limit/index";
+import {
+  loginSchemaValidation,
+  registerSchemaValidation,
+  socialAuthValidation,
+} from "./validation/user";
+
 export {
-  loggerMiddleware,
-  corsMiddleware,
-  notFoundMiddleWare,
+  authMiddleware,
   catchAllErrorMiddleware,
+  corsMiddleware,
+  loggerMiddleware,
+  loginSchemaValidation,
+  notFoundMiddleWare,
+  registerSchemaValidation,
+  socialAuthValidation,
 };

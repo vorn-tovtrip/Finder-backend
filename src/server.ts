@@ -31,7 +31,7 @@ const createAppServer = () => {
   app.use(express.json());
   const globalRateLimit = rateLimit({
     windowMs: 15 * 60 * 1000,
-    limit: 100,
+    limit: 200,
     message: {
       status: 429,
       message: "Too many requests, please try again later.",

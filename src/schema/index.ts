@@ -1,1 +1,2 @@
-export * from "./book/index";
+export * from "./register";
+export * from "./login";

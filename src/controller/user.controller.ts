@@ -1,0 +1,263 @@
+import { User } from "@prisma/client";
+import { NextFunction, Request, Response } from "express";
+import { TOKEN_EXPIRATION } from "../constant";
+import { getRedisClient, PrismaClient } from "../lib";
+import { authenticationSchema, loginSchema, socialAuthSchema } from "../schema";
+import { UserService } from "../service";
+import {
+  ApiResponse,
+  LoginMethod,
+  LoginUserParams,
+  RegisterPayload,
+} from "../types";
+import {
+  BcryptHelper,
+  ErrorResponse,
+  generateJwtAndStore,
+  signJwt,
+  SuccessResponse,
+} from "../utils";
+
+export class UserController {
+  private userService: UserService;
+
+  constructor() {
+    this.userService = new UserService(PrismaClient);
+  }
+
+  getUsers = async (req: Request, res: Response) => {
+    const data = await this.userService.findAll();
+    res.status(200).json({
+      code: 200,
+      message: "success",
+      data: data,
+    });
+  };
+
+  loginUser = async (req: Request<{}, LoginUserParams>, res: Response) => {
+    const parsed = loginSchema.safeParse(req.body);
+    if (parsed.success) {
+      const data = parsed.data;
+
+      const user = await this.userService.findUserExist(data.email!);
+      if (!user)
+        return ErrorResponse({
+          data: null,
+          res: res,
+          statusCode: 400,
+          error: "User is not found",
+        });
+
+      console.log("User is ", user);
+      const isMatch = await BcryptHelper.comparePassword(
+        data.password!,
+        user.password!
+      );
+      if (!isMatch)
+        return ErrorResponse({
+          res,
+          error: "Incorrect password",
+          data: null,
+          statusCode: 401,
+        });
+
+      // Generate token
+      const token = await generateJwtAndStore({
+        userId: user?.id?.toString() ?? "",
+        email: user?.email ?? "",
+      });
+
+      return SuccessResponse({
+        res,
+        data: {
+          token,
+          user: { id: user.id, email: user.email, username: user.name },
+        },
+        statusCode: 200,
+      });
+    }
+  };
+  logoutUser = async (req: Request, res: Response, next: NextFunction) => {
+    const redisClient = await getRedisClient();
+    const authHeader = req.headers.authorization;
+    const token = authHeader?.split(" ")[1];
+
+    if (!token)
+      return ErrorResponse({
+        data: null,
+        res: res,
+        statusCode: 400,
+        error: "Token is required",
+      });
+    // Mark token as blacklisted
+    await redisClient.set(`blacklist_token:${token}`, "blacklisted", {
+      EX: TOKEN_EXPIRATION,
+    });
+
+    return SuccessResponse({
+      res,
+      data: "Logged out successfully",
+      statusCode: 200,
+    });
+  };
+
+  patchUser = async (
+    req: Request<
+      { id: string },
+      {},
+      Partial<{ name: string; email: string; phone: string }>
+    >,
+    res: Response
+  ) => {
+    const { id } = req.params;
+    const { name, email, phone } = req.body;
+
+    const validId = parseInt(id);
+    const user = await this.userService.findUserById(validId);
+    if (!user) return res.status(404).json({ message: "User not found" });
+
+    const updatedUser = await this.userService.updateUser(validId, {
+      name,
+      email,
+      phone,
+    });
+
+    return SuccessResponse({
+      res,
+      data: updatedUser,
+      statusCode: 200,
+    });
+  };
+  socialAuth = async (req: Request, res: Response) => {
+    const redisClient = await getRedisClient();
+    const parsed = socialAuthSchema.safeParse(req.body);
+    if (!parsed.success) {
+      return res.status(400).json({
+        code: 400,
+        message: "Invalid payload",
+        errors: parsed.error.format(),
+      });
+    }
+    const data = parsed.data;
+    let user = await this.userService.findUserExist(data.email);
+    const isNewUser = !user;
+
+    if (!user) {
+      user = await this.userService.registerUserEmail({
+        email: data.email,
+        username: data.username || data.email.split("@")[0],
+        avatar: data.avatar || "",
+        password: "social-auth",
+        method: data.method,
+      });
+    }
+
+    // Generate JWT
+    const token = signJwt({ userId: user.id, email: user.email });
+    await redisClient.set(`access_token:${user.id}:${token}`, "active", {
+      EX: TOKEN_EXPIRATION,
+    });
+
+    return SuccessResponse({
+      res,
+      data: {
+        token,
+        user: {
+          id: user.id,
+          email: user.email,
+          username: user.name,
+          avatar: data?.avatar ?? "",
+          isNewUser,
+        },
+      },
+      statusCode: 200,
+    });
+  };
+  deleteUser = async (
+    req: Request<{ id: string }, {}, RegisterPayload, {}>,
+    res: Response
+  ) => {
+    const { id } = req.params;
+    const validId = parseInt(id);
+    const user = await this.userService.findUserById(validId);
+    if (!user) {
+      throw new Error("User doesnt exist");
+    }
+    await this.userService.deleteById(validId);
+    return SuccessResponse({
+      res,
+      data: user,
+      statusCode: 200,
+    });
+  };
+  registerUser = async (
+    req: Request<{}, RegisterPayload>,
+    res: Response<ApiResponse<User[]>>
+  ) => {
+    let user = null;
+    const parsed = authenticationSchema.safeParse(req.body);
+    const data = parsed.data;
+    if (parsed.success && data) {
+      const isExist = await this.userService.findUserExist(data.email!);
+      if (isExist) {
+        throw new Error("User with the same email has already exist");
+      }
+
+      if (data?.method == LoginMethod.email) {
+        const hashedPassword = await BcryptHelper.hashPassword(
+          data.password!,
+          10
+        );
+
+        user = await this.userService.registerUserEmail({
+          email: data.email!,
+          password: hashedPassword,
+          username: data.username!,
+          method: data.method,
+        });
+      }
+
+      // Sign Jwt logic
+      const token = await generateJwtAndStore({
+        userId: user?.id?.toString() ?? "",
+        email: user?.email ?? "",
+      });
+      return SuccessResponse({
+        res,
+        data: {
+          token,
+          user: {
+            id: user!.id,
+            email: user!.email,
+            username: user!.name,
+          },
+        },
+        statusCode: 200,
+      });
+    }
+  };
+
+  updateFcmToken = async (req: Request, res: Response) => {
+    const userId = (req as any).user?.userId;
+    const { fcmToken } = req.body;
+    if (!fcmToken) {
+      return ErrorResponse({
+        res,
+        data: null,
+        statusCode: 400,
+        error: "Missing FCM token",
+      });
+    }
+    // Check if token already exists for user
+    await this.userService.findAndUpdateFcmToken({
+      fcmToken,
+      userId: parseInt(userId),
+      platform: "android",
+    });
+    return SuccessResponse({
+      res,
+      data: { message: "Token updated successfully" },
+      statusCode: 200,
+    });
+  };
+}

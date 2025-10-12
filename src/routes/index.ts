@@ -1,8 +1,8 @@
 import { Router } from "express";
-import ExampleController from "../controller/example.controller";
-import { exampleRateLimit } from "../middleware";
+import { UserRouter } from "./user.route";
 
 const router = Router();
-router.use("/example", exampleRateLimit, ExampleController.getAllData);
+const userRouter = new UserRouter();
+router.use("/users", userRouter.getRouter());
 
 export default router;
