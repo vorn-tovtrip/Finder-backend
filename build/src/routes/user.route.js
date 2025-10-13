@@ -55,6 +55,12 @@ class UserRouter {
                 middlewares: [middleware_1.socialAuthValidation],
             },
             {
+                method: "put",
+                path: "/:id",
+                handler: this.userController.patchUser.bind(this.userController),
+                middlewares: [middleware_1.authMiddleware],
+            },
+            {
                 method: "post",
                 path: "/update-me",
                 handler: this.userController.updateFcmToken.bind(this.userController),

@@ -21,8 +21,6 @@ export const extractTokenFromHeader = (req: Request): string | null => {
  */
 export const verifyJwt = <T extends JwtPayload>(token: string): T | null => {
   try {
-    console.log("JWT_SECRET:", JWT_SECRET);
-
     return jwt.verify(token, JWT_SECRET) as T;
   } catch (error) {
     return null; // or throw error if you prefer strict handling
@@ -33,8 +31,6 @@ export const verifyJwt = <T extends JwtPayload>(token: string): T | null => {
  * Generate (sign) a JWT token
  */
 export const signJwt = (payload: object, options?: SignOptions): string => {
-  console.log("JWT_SECRET:", JWT_SECRET);
-
   return jwt.sign(payload, JWT_SECRET, {
     expiresIn: "14d",
     algorithm: "HS256",

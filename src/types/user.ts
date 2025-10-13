@@ -1,5 +1,3 @@
-import { User } from "@prisma/client";
-
 export enum LoginMethod {
   google = "google",
   facebook = "facebook",
@@ -31,4 +29,10 @@ export type OTPVerify = {
   phoneNunber: string;
 };
 
-export type UpdateUserPayload = Partial<User>;
+export interface UpdateUser {
+  name: string;
+  email: string;
+  phone?: string;
+  avatar?: string;
+}
+export type UpdateUserPayload = Partial<UpdateUser>;

@@ -62,6 +62,14 @@ export class UserService {
       where: {
         id: id,
       },
+      include: {
+        images: {
+          select: {
+            url: true,
+            id: true,
+          },
+        },
+      },
     });
 
     return user;

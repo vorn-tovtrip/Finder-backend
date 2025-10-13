@@ -57,6 +57,12 @@ model Image {
   user   User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
+model ReportCategory {
+  id      Int      @id @default(autoincrement())
+  name    String
+  reports Report[]
+}
+
 model Report {
   id            Int             @id @default(autoincrement())
   type          ReportType
@@ -74,6 +80,8 @@ model Report {
   createdAt     DateTime        @default(now())
   updatedAt     DateTime        @updatedAt
   UserBadge     UserBadge[]
+  Category      ReportCategory? @relation(fields: [categoryId], references: [id])
+  categoryId    Int?
 }
 
 model Claim {

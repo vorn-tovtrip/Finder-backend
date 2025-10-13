@@ -28,4 +28,8 @@ export const socialAuthSchema = z.object({
     errorMap: () => ({ message: "Invalid login method" }),
   }),
   socialToken: z.string(),
+  phone: z
+    .string()
+    .regex(/^\+?\d{10,15}$/, "Invalid phone number")
+    .optional(),
 });

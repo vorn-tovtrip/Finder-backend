@@ -1,15 +1,17 @@
 import { User } from "@prisma/client";
 import { NextFunction, Request, Response } from "express";
 import { TOKEN_EXPIRATION } from "../constant";
+import { LoginUserDTO, RegisterUserDTO } from "../dto";
 import { getRedisClient, PrismaClient } from "../lib";
-import { authenticationSchema, loginSchema, socialAuthSchema } from "../schema";
-import { UserService } from "../service";
+import { StorageService } from "../lib/firebase/storage";
 import {
-  ApiResponse,
-  LoginMethod,
-  LoginUserParams,
-  RegisterPayload,
-} from "../types";
+  authenticationSchema,
+  loginSchema,
+  socialAuthSchema,
+  updateUserSchema,
+} from "../schema";
+import { UploadService, UserService } from "../service";
+import { ApiResponse, LoginMethod, RegisterPayload } from "../types";
 import {
   BcryptHelper,
   ErrorResponse,
@@ -20,21 +22,25 @@ import {
 
 export class UserController {
   private userService: UserService;
+  private storageService: StorageService;
+  private uploadService: UploadService;
 
   constructor() {
     this.userService = new UserService(PrismaClient);
+    this.storageService = new StorageService();
+    this.uploadService = new UploadService(PrismaClient);
   }
 
   getUsers = async (req: Request, res: Response) => {
     const data = await this.userService.findAll();
-    res.status(200).json({
+    return res.status(200).json({
       code: 200,
       message: "success",
       data: data,
     });
   };
 
-  loginUser = async (req: Request<{}, LoginUserParams>, res: Response) => {
+  loginUser = async (req: Request<{}, LoginUserDTO>, res: Response) => {
     const parsed = loginSchema.safeParse(req.body);
     if (parsed.success) {
       const data = parsed.data;
@@ -77,7 +83,7 @@ export class UserController {
       });
     }
   };
-  logoutUser = async (req: Request, res: Response, next: NextFunction) => {
+  logoutUser = async (req: Request, res: Response) => {
     const redisClient = await getRedisClient();
     const authHeader = req.headers.authorization;
     const token = authHeader?.split(" ")[1];
@@ -102,31 +108,62 @@ export class UserController {
   };
 
   patchUser = async (
-    req: Request<
-      { id: string },
-      {},
-      Partial<{ name: string; email: string; phone: string }>
-    >,
-    res: Response
+    req: Request<{ id: string }>,
+    res: Response,
+    next: NextFunction
   ) => {
     const { id } = req.params;
-    const { name, email, phone } = req.body;
 
-    const validId = parseInt(id);
-    const user = await this.userService.findUserById(validId);
-    if (!user) return res.status(404).json({ message: "User not found" });
+    try {
+      const validId = parseInt(id);
+      const user = await this.userService.findUserById(validId);
+      if (!user) return res.status(404).json({ message: "User not found" });
 
-    const updatedUser = await this.userService.updateUser(validId, {
-      name,
-      email,
-      phone,
-    });
+      const rawUser = req.body.user;
+      if (!rawUser)
+        return res
+          .status(400)
+          .json({ message: "Missing 'user' field in form data" });
 
-    return SuccessResponse({
-      res,
-      data: updatedUser,
-      statusCode: 200,
-    });
+      const parsed = updateUserSchema.safeParse(JSON.parse(rawUser));
+      if (!parsed.success) {
+        return res.status(400).json({
+          message: "Validation failed",
+          errors: parsed.error.errors,
+        });
+      }
+
+      const { username, email, phone } = parsed.data;
+
+      // Upload image if provided
+      let avatar = user?.images?.at(0)?.url;
+      const imageId = user?.images?.at(0)?.id;
+      const file = (req as any).file as File | undefined;
+      if (file) {
+        avatar = await this.storageService.createFileUpload(file, file.name);
+        //Delete old  from database image and firebase
+        if (imageId) {
+          await this.uploadService.deleteById(imageId);
+          await this.storageService.deleteFile(avatar);
+        }
+      }
+
+      const updatedUser = await this.userService.updateUser(validId, {
+        name: username,
+        email,
+        phone,
+        avatar,
+      });
+
+      return SuccessResponse({
+        res,
+        data: updatedUser,
+        statusCode: 200,
+      });
+    } catch (error) {
+      console.error("Error updating user:", error);
+      return next(error);
+    }
   };
   socialAuth = async (req: Request, res: Response) => {
     const redisClient = await getRedisClient();
@@ -184,6 +221,21 @@ export class UserController {
       throw new Error("User doesnt exist");
     }
     await this.userService.deleteById(validId);
+    const redisClient = await getRedisClient();
+    const authHeader = req.headers.authorization;
+    const token = authHeader?.split(" ")[1];
+
+    if (!token)
+      return ErrorResponse({
+        data: null,
+        res: res,
+        statusCode: 400,
+        error: "Token is required",
+      });
+    // Mark token as blacklisted
+    await redisClient.set(`blacklist_token:${token}`, "blacklisted", {
+      EX: TOKEN_EXPIRATION,
+    });
     return SuccessResponse({
       res,
       data: user,
@@ -191,7 +243,7 @@ export class UserController {
     });
   };
   registerUser = async (
-    req: Request<{}, RegisterPayload>,
+    req: Request<{}, RegisterUserDTO>,
     res: Response<ApiResponse<User[]>>
   ) => {
     let user = null;

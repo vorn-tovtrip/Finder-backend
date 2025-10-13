@@ -23,7 +23,6 @@ exports.extractTokenFromHeader = extractTokenFromHeader;
  */
 const verifyJwt = (token) => {
     try {
-        console.log("JWT_SECRET:", JWT_SECRET);
         return jsonwebtoken_1.default.verify(token, JWT_SECRET);
     }
     catch (error) {
@@ -35,7 +34,6 @@ exports.verifyJwt = verifyJwt;
  * Generate (sign) a JWT token
  */
 const signJwt = (payload, options) => {
-    console.log("JWT_SECRET:", JWT_SECRET);
     return jsonwebtoken_1.default.sign(payload, JWT_SECRET, {
         expiresIn: "14d",
         algorithm: "HS256",

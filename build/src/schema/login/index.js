@@ -32,4 +32,8 @@ exports.socialAuthSchema = zod_1.default.object({
         errorMap: () => ({ message: "Invalid login method" }),
     }),
     socialToken: zod_1.default.string(),
+    phone: zod_1.default
+        .string()
+        .regex(/^\+?\d{10,15}$/, "Invalid phone number")
+        .optional(),
 });

@@ -12,8 +12,8 @@
     "postinstall": "prisma generate",
     "prisma:generate:dev": "npx dotenv -e .env.development -- prisma generate",
     "prisma:generate:prod": "npx dotenv -e .env.production -- prisma generate",
-    "prisma:migrate:dev": "npx dotenv -e .env.development -- prisma migrate dev --name img-table-user-dev",
-    "prisma:migrate:prod": "npx dotenv -e .env.production -- prisma migrate deploy --name init-table-prod"
+    "prisma:migrate:dev": "npx dotenv -e .env.development -- prisma migrate dev --name add-category-dev",
+    "prisma:migrate:prod": "npx dotenv -e .env.production -- prisma migrate deploy --name report-user-prod"
   },
   "author": "",
   "license": "ISC",
@@ -30,10 +30,13 @@
     "express-requests-logger": "^4.0.3",
     "express-session": "^1.18.1",
     "express-validator": "^7.2.1",
+    "firebase-admin": "^13.5.0",
     "helmet": "^8.1.0",
     "jsonwebtoken": "^9.0.2",
     "morgan": "^1.10.0",
     "redis": "^5.8.3",
+    "uuid": "^13.0.0",
+    "uuidv4": "^6.2.13",
     "zod": "^3.24.3"
   },
   "devDependencies": {
