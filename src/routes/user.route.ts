@@ -1,11 +1,12 @@
 import { Router } from "express";
 import { UserController } from "../controller";
+import { authMiddleware, validateSchemaMiddleware } from "../middleware";
 import {
-  authMiddleware,
-  loginSchemaValidation,
-  registerSchemaValidation,
-  socialAuthValidation,
-} from "../middleware";
+  authenticationSchema,
+  loginSchema,
+  socialAuthSchema,
+  updateUserSchema,
+} from "../schema";
 import { RouteDefinition } from "../types/route";
 
 export class UserRouter {
@@ -37,13 +38,13 @@ export class UserRouter {
         method: "post",
         path: "/register",
         handler: this.userController.registerUser.bind(this.userController),
-        middlewares: [registerSchemaValidation],
+        middlewares: [validateSchemaMiddleware(authenticationSchema)],
       },
       {
         method: "post",
         path: "/login",
         handler: this.userController.loginUser.bind(this.userController),
-        middlewares: [loginSchemaValidation],
+        middlewares: [validateSchemaMiddleware(loginSchema)],
       },
       {
         method: "delete",
@@ -60,13 +61,16 @@ export class UserRouter {
         method: "post",
         path: "/social-login",
         handler: this.userController.socialAuth.bind(this.userController),
-        middlewares: [socialAuthValidation],
+        middlewares: [validateSchemaMiddleware(socialAuthSchema)],
       },
       {
         method: "put",
         path: "/:id",
         handler: this.userController.patchUser.bind(this.userController),
-        middlewares: [authMiddleware],
+        middlewares: [
+          authMiddleware,
+          validateSchemaMiddleware(updateUserSchema),
+        ],
       },
       {
         method: "post",

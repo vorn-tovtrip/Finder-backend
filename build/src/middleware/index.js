@@ -3,7 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.socialAuthValidation = exports.registerSchemaValidation = exports.notFoundMiddleWare = exports.loginSchemaValidation = exports.loggerMiddleware = exports.corsMiddleware = exports.catchAllErrorMiddleware = exports.authMiddleware = void 0;
+exports.validateSchemaMiddleware = exports.notFoundMiddleWare = exports.loggerMiddleware = exports.corsMiddleware = exports.catchAllErrorMiddleware = exports.authMiddleware = void 0;
 const cors_1 = __importDefault(require("./cors"));
 exports.corsMiddleware = cors_1.default;
 const error_1 = __importDefault(require("./error"));
@@ -14,7 +14,5 @@ const logger_1 = __importDefault(require("./logger"));
 exports.loggerMiddleware = logger_1.default;
 const notfound_1 = __importDefault(require("./notfound"));
 exports.notFoundMiddleWare = notfound_1.default;
-const user_1 = require("./validation/user");
-Object.defineProperty(exports, "loginSchemaValidation", { enumerable: true, get: function () { return user_1.loginSchemaValidation; } });
-Object.defineProperty(exports, "registerSchemaValidation", { enumerable: true, get: function () { return user_1.registerSchemaValidation; } });
-Object.defineProperty(exports, "socialAuthValidation", { enumerable: true, get: function () { return user_1.socialAuthValidation; } });
+const zod_1 = require("./validation/zod");
+Object.defineProperty(exports, "validateSchemaMiddleware", { enumerable: true, get: function () { return zod_1.validateSchemaMiddleware; } });

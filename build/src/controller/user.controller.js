@@ -81,43 +81,47 @@ class UserController {
                 const validId = parseInt(id);
                 const user = await this.userService.findUserById(validId);
                 if (!user)
-                    return res.status(404).json({ message: "User not found" });
+                    return (0, utils_1.ErrorResponse)({
+                        data: null,
+                        res: res,
+                        statusCode: 400,
+                        error: "User is not found",
+                    });
                 const rawUser = req.body.user;
                 if (!rawUser)
-                    return res
-                        .status(400)
-                        .json({ message: "Missing 'user' field in form data" });
+                    return (0, utils_1.ErrorResponse)({
+                        data: null,
+                        res: res,
+                        statusCode: 400,
+                        error: "Missing user field in form data",
+                    });
                 const parsed = schema_1.updateUserSchema.safeParse(JSON.parse(rawUser));
-                if (!parsed.success) {
-                    return res.status(400).json({
-                        message: "Validation failed",
-                        errors: parsed.error.errors,
+                if (parsed.data && parsed.success) {
+                    const { username, email, phone } = parsed.data;
+                    // Upload image if provided
+                    let avatar = user?.images?.at(0)?.url;
+                    const imageId = user?.images?.at(0)?.id;
+                    const file = req.file;
+                    if (file) {
+                        avatar = await this.storageService.createFileUpload(file, file.name);
+                        //Delete old  from database image and firebase
+                        if (imageId) {
+                            await this.uploadService.deleteById(imageId);
+                            await this.storageService.deleteFile(avatar);
+                        }
+                    }
+                    const updatedUser = await this.userService.updateUser(validId, {
+                        name: username,
+                        email,
+                        phone,
+                        avatar,
+                    });
+                    return (0, utils_1.SuccessResponse)({
+                        res,
+                        data: updatedUser,
+                        statusCode: 200,
                     });
                 }
-                const { username, email, phone } = parsed.data;
-                // Upload image if provided
-                let avatar = user?.images?.at(0)?.url;
-                const imageId = user?.images?.at(0)?.id;
-                const file = req.file;
-                if (file) {
-                    avatar = await this.storageService.createFileUpload(file, file.name);
-                    //Delete old  from database image and firebase
-                    if (imageId) {
-                        await this.uploadService.deleteById(imageId);
-                        await this.storageService.deleteFile(avatar);
-                    }
-                }
-                const updatedUser = await this.userService.updateUser(validId, {
-                    name: username,
-                    email,
-                    phone,
-                    avatar,
-                });
-                return (0, utils_1.SuccessResponse)({
-                    res,
-                    data: updatedUser,
-                    statusCode: 200,
-                });
             }
             catch (error) {
                 console.error("Error updating user:", error);
