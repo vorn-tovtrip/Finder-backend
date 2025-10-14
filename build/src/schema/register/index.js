@@ -18,7 +18,7 @@ exports.authenticationSchema = zod_1.default.object({
         .optional(),
     phone: zod_1.default
         .string()
-        .regex(/^\+?\d{10,15}$/, "Invalid phone number")
+        .regex(/^(\+855)?0?\d{8,9}$/, "Invalid phone number")
         .optional(),
     method: zod_1.default.nativeEnum(types_1.LoginMethod, {
         errorMap: () => ({ message: "Invalid login method" }),

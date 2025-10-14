@@ -12,5 +12,23 @@ class UploadService {
             },
         });
     }
+    async findByUrl(url) {
+        const img = await this.prismaClient.image.findFirst({
+            where: {
+                url: url,
+            },
+        });
+        return img?.url;
+    }
+    async updateById(id, newUrl) {
+        return await this.prismaClient.image.update({
+            where: {
+                id: id,
+            },
+            data: {
+                url: newUrl,
+            },
+        });
+    }
 }
 exports.UploadService = UploadService;

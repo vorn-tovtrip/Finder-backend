@@ -1,6 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.UserController = void 0;
+const client_1 = require("@prisma/client");
 const constant_1 = require("../constant");
 const lib_1 = require("../lib");
 const storage_1 = require("../lib/firebase/storage");
@@ -12,10 +13,10 @@ class UserController {
     constructor() {
         this.getUsers = async (req, res) => {
             const data = await this.userService.findAll();
-            return res.status(200).json({
-                code: 200,
-                message: "success",
+            return (0, utils_1.SuccessResponse)({
+                res,
                 data: data,
+                statusCode: 200,
             });
         };
         this.loginUser = async (req, res) => {
@@ -78,50 +79,56 @@ class UserController {
         this.patchUser = async (req, res, next) => {
             const { id } = req.params;
             try {
-                const validId = parseInt(id);
-                const user = await this.userService.findUserById(validId);
-                if (!user)
+                const userId = parseInt(id);
+                const existingUser = await this.userService.findUserById(userId);
+                if (!existingUser) {
                     return (0, utils_1.ErrorResponse)({
-                        data: null,
-                        res: res,
-                        statusCode: 400,
-                        error: "User is not found",
-                    });
-                const rawUser = req.body.user;
-                if (!rawUser)
-                    return (0, utils_1.ErrorResponse)({
-                        data: null,
-                        res: res,
-                        statusCode: 400,
-                        error: "Missing user field in form data",
-                    });
-                const parsed = schema_1.updateUserSchema.safeParse(JSON.parse(rawUser));
-                if (parsed.data && parsed.success) {
-                    const { username, email, phone } = parsed.data;
-                    // Upload image if provided
-                    let avatar = user?.images?.at(0)?.url;
-                    const imageId = user?.images?.at(0)?.id;
-                    const file = req.file;
-                    if (file) {
-                        avatar = await this.storageService.createFileUpload(file, file.name);
-                        //Delete old  from database image and firebase
-                        if (imageId) {
-                            await this.uploadService.deleteById(imageId);
-                            await this.storageService.deleteFile(avatar);
-                        }
-                    }
-                    const updatedUser = await this.userService.updateUser(validId, {
-                        name: username,
-                        email,
-                        phone,
-                        avatar,
-                    });
-                    return (0, utils_1.SuccessResponse)({
                         res,
-                        data: updatedUser,
-                        statusCode: 200,
+                        data: null,
+                        statusCode: 404,
+                        error: "User not found",
                     });
                 }
+                // Validate JSON body
+                const parsed = schema_1.updateUserSchema.safeParse(req.body);
+                if (!parsed.success) {
+                    return (0, utils_1.ErrorResponse)({
+                        res,
+                        data: null,
+                        statusCode: 400,
+                        error: parsed.error.format(),
+                    });
+                }
+                const { username, email, phone, avatar } = parsed.data;
+                let finalAvatar = existingUser.images?.[0]?.url ?? "";
+                let imageId = undefined;
+                imageId = existingUser.images?.[0]?.id;
+                if (typeof avatar === "string") {
+                    // Check if URL already exists in DB
+                    const matchedImage = existingUser.images?.find((img) => img.url === avatar);
+                    if (matchedImage) {
+                        //This case we need to delete old image first
+                        await this.storageService.deleteFile(matchedImage.url);
+                        finalAvatar = matchedImage.url;
+                        imageId = matchedImage.id;
+                    }
+                }
+                // Update user
+                const updatedUser = await this.userService.updateUser(userId, {
+                    name: username,
+                    email,
+                    phone,
+                    avatar: finalAvatar,
+                });
+                // Update image record if ID exists
+                if (imageId) {
+                    await this.uploadService.updateById(imageId, finalAvatar);
+                }
+                return (0, utils_1.SuccessResponse)({
+                    res,
+                    data: updatedUser,
+                    statusCode: 200,
+                });
             }
             catch (error) {
                 console.error("Error updating user:", error);
@@ -258,9 +265,32 @@ class UserController {
                 statusCode: 200,
             });
         };
+        this.getReportLostLatest = async (req, res) => {
+            const { userId } = req.params;
+            const id = parseInt(userId);
+            const existingUser = await this.userService.findUserById(id);
+            if (!existingUser) {
+                return (0, utils_1.ErrorResponse)({
+                    res,
+                    data: null,
+                    statusCode: 404,
+                    error: "User not found",
+                });
+            }
+            const data = await this.reportService.findLatestReportByUser({
+                userId: id,
+                type: client_1.ReportType.LOST,
+            });
+            return (0, utils_1.SuccessResponse)({
+                res,
+                data: data,
+                statusCode: 200,
+            });
+        };
         this.userService = new service_1.UserService(lib_1.PrismaClient);
         this.storageService = new storage_1.StorageService();
         this.uploadService = new service_1.UploadService(lib_1.PrismaClient);
+        this.reportService = new service_1.ReportService(lib_1.PrismaClient);
     }
 }
 exports.UserController = UserController;

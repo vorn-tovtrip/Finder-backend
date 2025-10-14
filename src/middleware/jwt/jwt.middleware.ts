@@ -7,7 +7,6 @@ export const authMiddleware = async (
   next: NextFunction
 ) => {
   const user = await getUserFromRequest(req);
-  console.log("user is", user);
 
   if (!user) {
     return ErrorResponse({

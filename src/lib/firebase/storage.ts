@@ -1,30 +1,9 @@
 import { v4 as uuidv4 } from "uuid";
 import { bucket } from "../../config/firebase";
 import { getContentType } from "../../utils/helper";
+
 export class StorageService {
-  createFileUpload = async (file: File, originalName: string) => {
-    const fileName = `images/${uuidv4()}-${originalName}`;
-    const buffer = Buffer.from(await file.arrayBuffer());
-    const fileRef = bucket!.file(fileName);
-    await fileRef.save(buffer, {
-      contentType: getContentType(fileName),
-      public: true,
-    });
-    const url = `https://storage.googleapis.com/${bucket!.name}/${fileName}`;
-    return url;
-  };
-
-  deleteFile = async (filePath: string) => {
-    const fileRef = bucket!.file(filePath);
-    return await fileRef.delete();
-  };
-
-  //This stream upload is quicker
-  uploadFileStream = async (
-    file: File,
-    folder = "images",
-    originalName: string
-  ) => {
+  async uploadFileStream(file: File, folder = "images", originalName: string) {
     const fileName = `${folder}/${uuidv4()}-${originalName}`;
     const buffer = Buffer.from(await file.arrayBuffer());
     const fileRef = bucket!.file(fileName);
@@ -40,5 +19,15 @@ export class StorageService {
       writeStream.end(buffer);
     });
     return `https://storage.googleapis.com/${bucket!.name}/${fileName}`;
-  };
+  }
+
+  async deleteFile(filePath: string): Promise<void> {
+    try {
+      const fileRef = bucket!.file(filePath);
+      await fileRef.delete();
+    } catch (error) {
+      console.error("Error deleting file:", error);
+      throw new Error("Failed to delete file from Firebase Storage");
+    }
+  }
 }

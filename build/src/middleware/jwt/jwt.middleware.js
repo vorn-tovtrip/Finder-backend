@@ -4,7 +4,6 @@ exports.authMiddleware = void 0;
 const utils_1 = require("../../utils");
 const authMiddleware = async (req, res, next) => {
     const user = await (0, utils_1.getUserFromRequest)(req);
-    console.log("user is", user);
     if (!user) {
         return (0, utils_1.ErrorResponse)({
             res,

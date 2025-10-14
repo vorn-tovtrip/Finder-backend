@@ -13,4 +13,24 @@ export class UploadService {
       },
     });
   }
+
+  async findByUrl(url: string) {
+    const img = await this.prismaClient.image.findFirst({
+      where: {
+        url: url,
+      },
+    });
+
+    return img?.url;
+  }
+  async updateById(id: number, newUrl: string) {
+    return await this.prismaClient.image.update({
+      where: {
+        id: id,
+      },
+      data: {
+        url: newUrl,
+      },
+    });
+  }
 }

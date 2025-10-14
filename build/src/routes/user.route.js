@@ -21,6 +21,12 @@ class UserRouter {
                 middlewares: [middleware_1.authMiddleware],
             },
             {
+                method: "get",
+                path: "/:userId/report/latest",
+                handler: this.userController.getReportLostLatest.bind(this.userController),
+                middlewares: [middleware_1.authMiddleware],
+            },
+            {
                 method: "put",
                 path: "/:id",
                 handler: this.userController.patchUser.bind(this.userController),
@@ -80,7 +86,7 @@ class UserRouter {
             }
         });
     }
-    getRouter() {
+    initRoutes() {
         //This will call the constructor back
         return this.router;
     }

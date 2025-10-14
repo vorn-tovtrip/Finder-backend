@@ -1,4 +1,4 @@
-import { User } from "@prisma/client";
+import { ReportType, User } from "@prisma/client";
 import { NextFunction, Request, Response } from "express";
 import { TOKEN_EXPIRATION } from "../constant";
 import { LoginUserDTO, RegisterUserDTO } from "../dto";
@@ -10,7 +10,7 @@ import {
   socialAuthSchema,
   updateUserSchema,
 } from "../schema";
-import { UploadService, UserService } from "../service";
+import { ReportService, UploadService, UserService } from "../service";
 import { ApiResponse, LoginMethod, RegisterPayload } from "../types";
 import {
   BcryptHelper,
@@ -24,19 +24,21 @@ export class UserController {
   private userService: UserService;
   private storageService: StorageService;
   private uploadService: UploadService;
+  private reportService: ReportService;
 
   constructor() {
     this.userService = new UserService(PrismaClient);
     this.storageService = new StorageService();
     this.uploadService = new UploadService(PrismaClient);
+    this.reportService = new ReportService(PrismaClient);
   }
 
   getUsers = async (req: Request, res: Response) => {
     const data = await this.userService.findAll();
-    return res.status(200).json({
-      code: 200,
-      message: "success",
+    return SuccessResponse({
+      res,
       data: data,
+      statusCode: 200,
     });
   };
 
@@ -115,60 +117,70 @@ export class UserController {
     const { id } = req.params;
 
     try {
-      const validId = parseInt(id);
-      const user = await this.userService.findUserById(validId);
-      if (!user)
+      const userId = parseInt(id);
+      const existingUser = await this.userService.findUserById(userId);
+
+      if (!existingUser) {
         return ErrorResponse({
-          data: null,
-          res: res,
-          statusCode: 400,
-          error: "User is not found",
-        });
-
-      const rawUser = req.body.user;
-      if (!rawUser)
-        return ErrorResponse({
-          data: null,
-          res: res,
-          statusCode: 400,
-          error: "Missing user field in form data",
-        });
-
-      const parsed = updateUserSchema.safeParse(JSON.parse(rawUser));
-      if (parsed.data && parsed.success) {
-        const { username, email, phone } = parsed.data;
-
-        // Upload image if provided
-        let avatar = user?.images?.at(0)?.url;
-        const imageId = user?.images?.at(0)?.id;
-        const file = (req as any).file as File | undefined;
-        if (file) {
-          avatar = await this.storageService.createFileUpload(file, file.name);
-          //Delete old  from database image and firebase
-          if (imageId) {
-            await this.uploadService.deleteById(imageId);
-            await this.storageService.deleteFile(avatar);
-          }
-        }
-
-        const updatedUser = await this.userService.updateUser(validId, {
-          name: username,
-          email,
-          phone,
-          avatar,
-        });
-
-        return SuccessResponse({
           res,
-          data: updatedUser,
-          statusCode: 200,
+          data: null,
+          statusCode: 404,
+          error: "User not found",
         });
       }
+
+      // Validate JSON body
+      const parsed = updateUserSchema.safeParse(req.body);
+      if (!parsed.success) {
+        return ErrorResponse({
+          res,
+          data: null,
+          statusCode: 400,
+          error: parsed.error.format(),
+        });
+      }
+
+      const { username, email, phone, avatar } = parsed.data;
+      let finalAvatar = existingUser.images?.[0]?.url ?? "";
+      let imageId = undefined;
+      imageId = existingUser.images?.[0]?.id;
+      if (typeof avatar === "string") {
+        // Check if URL already exists in DB
+        const matchedImage = existingUser.images?.find(
+          (img) => img.url === avatar
+        );
+        if (matchedImage) {
+          //This case we need to delete old image first
+          await this.storageService.deleteFile(matchedImage.url);
+          finalAvatar = matchedImage.url;
+          imageId = matchedImage.id;
+        }
+      }
+
+      // Update user
+      const updatedUser = await this.userService.updateUser(userId, {
+        name: username,
+        email,
+        phone,
+        avatar: finalAvatar,
+      });
+
+      // Update image record if ID exists
+      if (imageId) {
+        await this.uploadService.updateById(imageId, finalAvatar);
+      }
+
+      return SuccessResponse({
+        res,
+        data: updatedUser,
+        statusCode: 200,
+      });
     } catch (error) {
       console.error("Error updating user:", error);
       return next(error);
     }
   };
+
   socialAuth = async (req: Request, res: Response) => {
     const redisClient = await getRedisClient();
     const parsed = socialAuthSchema.safeParse(req.body);
@@ -313,6 +325,34 @@ export class UserController {
     return SuccessResponse({
       res,
       data: { message: "Token updated successfully" },
+      statusCode: 200,
+    });
+  };
+
+  getReportLostLatest = async (
+    req: Request<{ userId: string }>,
+    res: Response
+  ) => {
+    const { userId } = req.params;
+    const id = parseInt(userId);
+
+    const existingUser = await this.userService.findUserById(id);
+    if (!existingUser) {
+      return ErrorResponse({
+        res,
+        data: null,
+        statusCode: 404,
+        error: "User not found",
+      });
+    }
+
+    const data = await this.reportService.findLatestReportByUser({
+      userId: id,
+      type: ReportType.LOST,
+    });
+    return SuccessResponse({
+      res,
+      data: data,
       statusCode: 200,
     });
   };

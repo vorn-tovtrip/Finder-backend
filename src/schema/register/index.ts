@@ -13,8 +13,9 @@ export const authenticationSchema = z.object({
     .optional(),
   phone: z
     .string()
-    .regex(/^\+?\d{10,15}$/, "Invalid phone number")
+    .regex(/^(\+855)?0?\d{8,9}$/, "Invalid phone number")
     .optional(),
+
   method: z.nativeEnum(LoginMethod, {
     errorMap: () => ({ message: "Invalid login method" }),
   }),
