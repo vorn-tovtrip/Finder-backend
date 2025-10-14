@@ -22,7 +22,7 @@ export class ReportService {
       title: payload.title,
       description: payload.description,
       location: payload.location ?? null,
-
+      timeLostAt: payload.timeLostAt ?? null,
       user: {
         connect: { id: payload.userId },
       },
@@ -53,8 +53,10 @@ export class ReportService {
   /**
    * Get all reports with optional related data
    */
-  async findAllReports(): Promise<Reports[]> {
+  async findAllReports(filters?: Prisma.ReportWhereInput): Promise<Reports[]> {
+    console.log("Filter is ", filters);
     return this.prisma.report.findMany({
+      where: filters,
       omit: {
         categoryId: true,
         rewardBadgeId: true,
@@ -64,7 +66,6 @@ export class ReportService {
         images: { select: { url: true } },
         category: { select: { id: true, name: true } },
       },
-
       orderBy: { createdAt: "desc" },
     });
   }
@@ -92,7 +93,35 @@ export class ReportService {
         category: true,
         claims: true,
         histories: true,
-        UserBadge: true,
+        userBadge: true,
+      },
+      orderBy: {
+        id: "desc",
+      },
+    });
+  }
+  async findReportHistoryByUser({
+    userId,
+    status,
+  }: {
+    userId: number;
+    status?: ReportStatus;
+  }) {
+    return this.prisma.report.findMany({
+      where: {
+        userId,
+        ...(status && { status: { equals: status } }),
+      },
+      omit: {
+        categoryId: true,
+        rewardBadgeId: true,
+      },
+      include: {
+        rewardBadge: true,
+        category: true,
+        claims: true,
+        histories: true,
+        userBadge: true,
       },
       orderBy: {
         id: "desc",
@@ -128,6 +157,7 @@ export class ReportService {
     const data: Prisma.ReportUpdateInput = {
       ...(payload.type && { type: payload.type }),
       ...(payload.title && { title: payload.title }),
+      ...(payload.timeLostAt && { timeLostAt: payload.timeLostAt }),
       ...(payload.description && { description: payload.description }),
       ...(payload.location && { location: payload.location }),
       ...(payload.imageUrl && { imageUrl: payload.imageUrl }),
@@ -176,19 +206,13 @@ export class ReportService {
   /**
    * Update only report status
    */
-  async updateReportStatus(id: number, status: ReportStatus): Promise<Reports> {
+  async updateReportStatus(id: number, userId: number, status: ReportStatus) {
     return this.prisma.report.update({
-      where: { id },
+      where: {
+        userId: userId,
+        id,
+      },
       data: { status },
-      omit: {
-        categoryId: true,
-        rewardBadgeId: true,
-      },
-      include: {
-        user: { select: { id: true, name: true, email: true } },
-        images: { select: { url: true } },
-        category: { select: { id: true, name: true } },
-      },
     });
   }
 }

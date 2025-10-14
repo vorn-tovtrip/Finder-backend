@@ -3,7 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.validateSchemaMiddleware = exports.notFoundMiddleWare = exports.loggerMiddleware = exports.corsMiddleware = exports.catchAllErrorMiddleware = exports.authMiddleware = void 0;
+exports.validateSchemaMiddleware = exports.validateReportQueryMiddleware = exports.notFoundMiddleWare = exports.loggerMiddleware = exports.corsMiddleware = exports.checkParamsId = exports.catchAllErrorMiddleware = exports.authMiddleware = void 0;
 const cors_1 = __importDefault(require("./cors"));
 exports.corsMiddleware = cors_1.default;
 const error_1 = __importDefault(require("./error"));
@@ -14,5 +14,8 @@ const logger_1 = __importDefault(require("./logger"));
 exports.loggerMiddleware = logger_1.default;
 const notfound_1 = __importDefault(require("./notfound"));
 exports.notFoundMiddleWare = notfound_1.default;
+const params_1 = require("./validation/params");
+Object.defineProperty(exports, "checkParamsId", { enumerable: true, get: function () { return params_1.checkParamsId; } });
+Object.defineProperty(exports, "validateReportQueryMiddleware", { enumerable: true, get: function () { return params_1.validateReportQueryMiddleware; } });
 const zod_1 = require("./validation/zod");
 Object.defineProperty(exports, "validateSchemaMiddleware", { enumerable: true, get: function () { return zod_1.validateSchemaMiddleware; } });

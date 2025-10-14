@@ -1,6 +1,10 @@
 import { Router } from "express";
 import { UserController } from "../controller";
-import { authMiddleware, validateSchemaMiddleware } from "../middleware";
+import {
+  authMiddleware,
+  validateReportQueryMiddleware,
+  validateSchemaMiddleware,
+} from "../middleware";
 import {
   authenticationSchema,
   loginSchema,
@@ -41,6 +45,14 @@ export class UserRouter {
         path: "/:id",
         handler: this.userController.patchUser.bind(this.userController),
         middlewares: [authMiddleware],
+      },
+      {
+        method: "get",
+        path: "/:id/history-report-all",
+        handler: this.userController.getReportHistoryUser.bind(
+          this.userController
+        ),
+        middlewares: [authMiddleware, validateReportQueryMiddleware],
       },
       {
         method: "post",

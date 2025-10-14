@@ -21,6 +21,7 @@ class ReportService {
             title: payload.title,
             description: payload.description,
             location: payload.location ?? null,
+            timeLostAt: payload.timeLostAt ?? null,
             user: {
                 connect: { id: payload.userId },
             },
@@ -46,8 +47,10 @@ class ReportService {
     /**
      * Get all reports with optional related data
      */
-    async findAllReports() {
+    async findAllReports(filters) {
+        console.log("Filter is ", filters);
         return this.prisma.report.findMany({
+            where: filters,
             omit: {
                 categoryId: true,
                 rewardBadgeId: true,
@@ -77,7 +80,29 @@ class ReportService {
                 category: true,
                 claims: true,
                 histories: true,
-                UserBadge: true,
+                userBadge: true,
+            },
+            orderBy: {
+                id: "desc",
+            },
+        });
+    }
+    async findReportHistoryByUser({ userId, status, }) {
+        return this.prisma.report.findMany({
+            where: {
+                userId,
+                ...(status && { status: { equals: status } }),
+            },
+            omit: {
+                categoryId: true,
+                rewardBadgeId: true,
+            },
+            include: {
+                rewardBadge: true,
+                category: true,
+                claims: true,
+                histories: true,
+                userBadge: true,
             },
             orderBy: {
                 id: "desc",
@@ -108,6 +133,7 @@ class ReportService {
         const data = {
             ...(payload.type && { type: payload.type }),
             ...(payload.title && { title: payload.title }),
+            ...(payload.timeLostAt && { timeLostAt: payload.timeLostAt }),
             ...(payload.description && { description: payload.description }),
             ...(payload.location && { location: payload.location }),
             ...(payload.imageUrl && { imageUrl: payload.imageUrl }),
@@ -153,19 +179,13 @@ class ReportService {
     /**
      * Update only report status
      */
-    async updateReportStatus(id, status) {
+    async updateReportStatus(id, userId, status) {
         return this.prisma.report.update({
-            where: { id },
+            where: {
+                userId: userId,
+                id,
+            },
             data: { status },
-            omit: {
-                categoryId: true,
-                rewardBadgeId: true,
-            },
-            include: {
-                user: { select: { id: true, name: true, email: true } },
-                images: { select: { url: true } },
-                category: { select: { id: true, name: true } },
-            },
         });
     }
 }

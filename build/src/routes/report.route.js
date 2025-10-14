@@ -18,7 +18,7 @@ class ReportRouter {
                 method: "get",
                 path: "/",
                 handler: this.reportController.getAllReports.bind(this.reportController),
-                middlewares: [middleware_1.authMiddleware],
+                middlewares: [middleware_1.authMiddleware, middleware_1.validateReportQueryMiddleware],
             },
             {
                 method: "get",
@@ -42,6 +42,33 @@ class ReportRouter {
                 middlewares: [
                     middleware_1.authMiddleware,
                     (0, middleware_1.validateSchemaMiddleware)(schema_1.updateReportSchema),
+                ],
+            },
+            {
+                method: "put",
+                path: "/:id/status/update-chat-owner",
+                handler: this.reportController.updateStatusChatOwner.bind(this.reportController),
+                middlewares: [
+                    middleware_1.authMiddleware,
+                    (0, middleware_1.validateSchemaMiddleware)(schema_1.updateStatusReportSchema),
+                ],
+            },
+            {
+                method: "put",
+                path: "/:id/status/confirm-found",
+                handler: this.reportController.updateStatusConfirm.bind(this.reportController),
+                middlewares: [
+                    middleware_1.authMiddleware,
+                    (0, middleware_1.validateSchemaMiddleware)(schema_1.updateStatusReportSchema),
+                ],
+            },
+            {
+                method: "delete",
+                path: "/:id/status/cancel",
+                handler: this.reportController.updateStatusCancel.bind(this.reportController),
+                middlewares: [
+                    middleware_1.authMiddleware,
+                    (0, middleware_1.validateSchemaMiddleware)(schema_1.updateStatusReportSchema),
                 ],
             },
             {

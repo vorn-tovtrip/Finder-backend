@@ -1,7 +1,11 @@
 import { NextFunction, Request, Response } from "express";
 import { CreateReportDTO } from "../dto";
 import { PrismaClient } from "../lib";
-import { createReportSchema, updateReportSchema } from "../schema";
+import {
+  createReportSchema,
+  updateReportSchema,
+  updateStatusReportSchema,
+} from "../schema";
 import { ReportService, UserService } from "../service";
 import { SuccessResponse } from "../utils";
 export class ReportController {
@@ -12,10 +16,15 @@ export class ReportController {
     this.reportService = new ReportService(PrismaClient);
     this.userService = new UserService(PrismaClient);
   }
-
   getAllReports = async (req: Request, res: Response) => {
-    const reports = await this.reportService.findAllReports();
-    return SuccessResponse({ res, data: reports, statusCode: 200 });
+    try {
+      const filters = req.filters;
+      const reports = await this.reportService.findAllReports(filters);
+      return SuccessResponse({ res, data: reports, statusCode: 200 });
+    } catch (error) {
+      console.error(error);
+      return res.status(500).json({ message: "Internal server error" });
+    }
   };
 
   getReportById = async (req: Request, res: Response) => {
@@ -60,7 +69,47 @@ export class ReportController {
     );
     return SuccessResponse({ res, data: report, statusCode: 201 });
   };
+  updateStatusChatOwner = async (req: Request, res: Response) => {
+    const id = Number(req.params.id);
+    const parsed = updateStatusReportSchema.safeParse(req.body);
 
+    // ** Add logic to send notification to the owner that own that report
+    // ** User Id here is the one that report
+    if (parsed.data && parsed.success) {
+      const report = await this.reportService.updateReportStatus(
+        id,
+        parseInt(parsed.data.userId),
+        "CHATOWNER"
+      );
+      const userIdreport = report.userId;
+      console.log(">>> Send notification to ", userIdreport);
+      return SuccessResponse({ res, data: report, statusCode: 201 });
+    }
+  };
+  updateStatusConfirm = async (req: Request, res: Response) => {
+    const id = Number(req.params.id);
+    const parsed = updateStatusReportSchema.safeParse(req.body);
+
+    // ** User Id here is the one that confirm
+    if (parsed.data && parsed.success) {
+      const report = await this.reportService.updateReportStatus(
+        id,
+        parseInt(parsed.data.userId),
+        "COMPLETED"
+      );
+      return SuccessResponse({ res, data: report, statusCode: 201 });
+    }
+  };
+  updateStatusCancel = async (req: Request, res: Response) => {
+    const id = Number(req.params.id);
+    const parsed = updateStatusReportSchema.safeParse(req.body);
+
+    // ** Need user id just incase not delete that report
+    if (parsed.data && parsed.success) {
+      const report = await this.reportService.deleteReport(id);
+      return SuccessResponse({ res, data: report, statusCode: 201 });
+    }
+  };
   deleteReport = async (req: Request, res: Response) => {
     const id = Number(req.params.id);
     const report = await this.reportService.deleteReport(id);

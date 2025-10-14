@@ -1,4 +1,4 @@
-import { ReportType, User } from "@prisma/client";
+import { ReportStatus, ReportType, User } from "@prisma/client";
 import { NextFunction, Request, Response } from "express";
 import { TOKEN_EXPIRATION } from "../constant";
 import { LoginUserDTO, RegisterUserDTO } from "../dto";
@@ -342,7 +342,7 @@ export class UserController {
         res,
         data: null,
         statusCode: 404,
-        error: "User not found",
+        error: "User is not found",
       });
     }
 
@@ -353,6 +353,34 @@ export class UserController {
     return SuccessResponse({
       res,
       data: data,
+      statusCode: 200,
+    });
+  };
+
+  getReportHistoryUser = async (
+    req: Request<{ id: string }>,
+    res: Response
+  ) => {
+    const { id } = req.params;
+    const filters = req.filters;
+    const reportStatus = filters?.status;
+    const mutateUserId = parseInt(id);
+    const existingUser = await this.userService.findUserById(mutateUserId);
+    if (!existingUser) {
+      return ErrorResponse({
+        res,
+        data: null,
+        statusCode: 404,
+        error: "User is not found",
+      });
+    }
+    const data = await this.reportService.findReportHistoryByUser({
+      userId: mutateUserId,
+      status: reportStatus as ReportStatus,
+    });
+    return SuccessResponse({
+      res,
+      data,
       statusCode: 200,
     });
   };

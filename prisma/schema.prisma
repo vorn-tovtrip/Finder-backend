@@ -20,8 +20,7 @@ enum ReportType {
 
 enum ReportStatus {
   PENDING
-  WAITING
-  CLAIMED
+  CHATOWNER
   COMPLETED
 }
 
@@ -96,7 +95,8 @@ model Report {
   rewardBadgeId Int?
   createdAt     DateTime        @default(now())
   updatedAt     DateTime        @updatedAt
-  UserBadge     UserBadge[]
+  userBadge     UserBadge[]
+  timeLostAt    DateTime        @default(now())
   category      ReportCategory? @relation(fields: [categoryId], references: [id])
   categoryId    Int?
 

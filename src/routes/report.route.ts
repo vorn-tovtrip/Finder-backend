@@ -1,7 +1,15 @@
 import { Router } from "express";
 import { ReportController } from "../controller";
-import { authMiddleware, validateSchemaMiddleware } from "../middleware";
-import { createReportSchema, updateReportSchema } from "../schema";
+import {
+  authMiddleware,
+  validateReportQueryMiddleware,
+  validateSchemaMiddleware,
+} from "../middleware";
+import {
+  createReportSchema,
+  updateReportSchema,
+  updateStatusReportSchema,
+} from "../schema";
 import { RouteDefinition } from "../types/route";
 
 export class ReportRouter {
@@ -23,7 +31,7 @@ export class ReportRouter {
         handler: this.reportController.getAllReports.bind(
           this.reportController
         ),
-        middlewares: [authMiddleware],
+        middlewares: [authMiddleware, validateReportQueryMiddleware],
       },
       {
         method: "get",
@@ -49,6 +57,39 @@ export class ReportRouter {
         middlewares: [
           authMiddleware,
           validateSchemaMiddleware(updateReportSchema),
+        ],
+      },
+      {
+        method: "put",
+        path: "/:id/status/update-chat-owner",
+        handler: this.reportController.updateStatusChatOwner.bind(
+          this.reportController
+        ),
+        middlewares: [
+          authMiddleware,
+          validateSchemaMiddleware(updateStatusReportSchema),
+        ],
+      },
+      {
+        method: "put",
+        path: "/:id/status/confirm-found",
+        handler: this.reportController.updateStatusConfirm.bind(
+          this.reportController
+        ),
+        middlewares: [
+          authMiddleware,
+          validateSchemaMiddleware(updateStatusReportSchema),
+        ],
+      },
+      {
+        method: "delete",
+        path: "/:id/status/cancel",
+        handler: this.reportController.updateStatusCancel.bind(
+          this.reportController
+        ),
+        middlewares: [
+          authMiddleware,
+          validateSchemaMiddleware(updateStatusReportSchema),
         ],
       },
       {

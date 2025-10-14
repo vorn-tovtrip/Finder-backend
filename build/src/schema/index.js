@@ -18,3 +18,4 @@ __exportStar(require("./register"), exports);
 __exportStar(require("./login"), exports);
 __exportStar(require("./user"), exports);
 __exportStar(require("./report"), exports);
+__exportStar(require("./query"), exports);

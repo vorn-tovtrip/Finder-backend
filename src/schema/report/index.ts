@@ -11,6 +11,19 @@ export const createReportSchema = z.object({
   imageUrl: z.string().url().optional(),
   userId: z.number({ invalid_type_error: "userId must be a number" }),
   categoryId: z.number().optional(),
+  timeLostAt: z.preprocess(
+    (val) => {
+      if (typeof val === "string" || typeof val === "number") {
+        const date = new Date(val);
+        return isNaN(date.getTime()) ? undefined : date;
+      }
+      return val;
+    },
+    z.date({
+      required_error: "timeLostAt is required",
+      invalid_type_error: "Invalid date/time provided",
+    })
+  ),
   rewardBadgeId: z.number().optional(),
   contactnumber: z
     .string()
@@ -19,3 +32,6 @@ export const createReportSchema = z.object({
 });
 
 export const updateReportSchema = createReportSchema.partial();
+export const updateStatusReportSchema = z.object({
+  userId: z.string().min(1, "User Id is required"),
+});

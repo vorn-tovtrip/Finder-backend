@@ -274,7 +274,7 @@ class UserController {
                     res,
                     data: null,
                     statusCode: 404,
-                    error: "User not found",
+                    error: "User is not found",
                 });
             }
             const data = await this.reportService.findLatestReportByUser({
@@ -284,6 +284,30 @@ class UserController {
             return (0, utils_1.SuccessResponse)({
                 res,
                 data: data,
+                statusCode: 200,
+            });
+        };
+        this.getReportHistoryUser = async (req, res) => {
+            const { id } = req.params;
+            const filters = req.filters;
+            const reportStatus = filters?.status;
+            const mutateUserId = parseInt(id);
+            const existingUser = await this.userService.findUserById(mutateUserId);
+            if (!existingUser) {
+                return (0, utils_1.ErrorResponse)({
+                    res,
+                    data: null,
+                    statusCode: 404,
+                    error: "User is not found",
+                });
+            }
+            const data = await this.reportService.findReportHistoryByUser({
+                userId: mutateUserId,
+                status: reportStatus,
+            });
+            return (0, utils_1.SuccessResponse)({
+                res,
+                data,
                 statusCode: 200,
             });
         };
