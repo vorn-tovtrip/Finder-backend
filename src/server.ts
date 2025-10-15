@@ -1,18 +1,21 @@
 import compression from "compression";
-import session from "express-session";
+import cors from "cors";
 import express, { Request, Response } from "express";
 import { rateLimit } from "express-rate-limit";
+import session from "express-session";
 import helmet from "helmet";
 import morgan from "morgan";
 import {
   catchAllErrorMiddleware,
-  corsMiddleware,
   loggerMiddleware,
   notFoundMiddleWare,
 } from "./middleware";
 import mainRoute from "./routes";
 const createAppServer = () => {
   const app = express();
+  app.use(loggerMiddleware, morgan("dev"));
+  app.use(cors());
+
   app.use(
     session({
       saveUninitialized: false,
@@ -38,7 +41,6 @@ const createAppServer = () => {
     },
   });
 
-  app.use(loggerMiddleware, corsMiddleware, morgan("dev"));
   app.use(globalRateLimit);
   app.get("/", (_: Request, res: Response) => {
     return res.send(`Welcome to Finder Backend ${process.env.NODE_ENV}`);

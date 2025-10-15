@@ -6,7 +6,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const cors_1 = __importDefault(require("cors"));
 const corsMiddleware = (0, cors_1.default)({
     origin: ["*"],
-    methods: ["GET", "POST", "DELETE"],
+    methods: ["GET", "POST", "PUT", "DELETE"], // allowed HTTP methods
     credentials: true,
 });
 exports.default = corsMiddleware;

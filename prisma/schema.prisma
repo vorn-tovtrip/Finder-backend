@@ -41,20 +41,37 @@ model Notification {
 }
 
 model User {
-  id            Int            @id @default(autoincrement())
-  name          String
-  email         String         @unique()
-  phone         String?
-  password      String?
-  reports       Report[]       @relation("UserReports")
-  claims        Claim[]        @relation("UserClaims")
-  userBadges    UserBadge[]
-  createdAt     DateTime       @default(now())
-  DeviceToken   DeviceToken[]
-  platform      LoginMethod?
-  images        Image[]
-  notifications Notification[]
-  totalScore    Int            @default(0)
+  id               Int            @id @default(autoincrement())
+  name             String
+  email            String         @unique()
+  phone            String?
+  password         String?
+  reports          Report[]       @relation("UserReports")
+  claims           Claim[]        @relation("UserClaims")
+  userBadges       UserBadge[]
+  createdAt        DateTime       @default(now())
+  DeviceToken      DeviceToken[]
+  platform         LoginMethod?
+  images           Image[]
+  notifications    Notification[]
+  totalScore       Int            @default(0)
+  messagesSent     Message[]      @relation("SentMessages")
+  messagesReceived Message[]      @relation("ReceivedMessages")
+  Message          Message[]
+}
+
+model Message {
+  id         Int      @id @default(autoincrement())
+  content    String
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  senderId   Int
+  receiverId Int
+
+  sender   User  @relation("SentMessages", fields: [senderId], references: [id])
+  receiver User  @relation("ReceivedMessages", fields: [receiverId], references: [id])
+  User     User? @relation(fields: [userId], references: [id])
+  userId   Int?
 }
 
 model Image {

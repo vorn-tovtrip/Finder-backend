@@ -19,3 +19,4 @@ __exportStar(require("./report.controller"), exports);
 __exportStar(require("./category.controller"), exports);
 __exportStar(require("./storage.controller"), exports);
 __exportStar(require("./notification.controller"), exports);
+__exportStar(require("./message.controller"), exports);

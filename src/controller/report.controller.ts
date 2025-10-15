@@ -6,16 +6,23 @@ import {
   updateReportSchema,
   updateStatusReportSchema,
 } from "../schema";
-import { ReportService, UserService } from "../service";
+import { MessageService, ReportService, UserService } from "../service";
 import { SuccessResponse } from "../utils";
+import { MessageController } from "./message.controller";
+import { ioInstance, onlineUsers } from "../lib/socket/io";
 export class ReportController {
   private reportService: ReportService;
   private userService: UserService;
+  private messageService: MessageService;
+  private messageController: MessageController;
 
   constructor() {
     this.reportService = new ReportService(PrismaClient);
     this.userService = new UserService(PrismaClient);
+    this.messageService = new MessageService(PrismaClient);
+    this.messageController = new MessageController();
   }
+
   getAllReports = async (req: Request, res: Response) => {
     try {
       const filters = req.filters;
@@ -69,6 +76,7 @@ export class ReportController {
     );
     return SuccessResponse({ res, data: report, statusCode: 201 });
   };
+
   updateStatusChatOwner = async (req: Request, res: Response) => {
     const id = Number(req.params.id);
     const parsed = updateStatusReportSchema.safeParse(req.body);
@@ -83,8 +91,12 @@ export class ReportController {
         parseInt(parsed.data.userId),
         "CHATOWNER"
       );
-      const userIdreport = report;
+      const userIdreport = report.userId;
       console.log(">>> Send notification to ", userIdreport);
+      // Create empty chat (optional: after confirming, notify/report owner)
+      const senderId = parseInt(parsed.data.userId); // user who confirms
+      const receiverId = userIdreport; // owner of the report
+      await this.createChatBetweenUser(senderId, receiverId);
       return SuccessResponse({ res, data: report, statusCode: 201 });
     }
   };
@@ -123,4 +135,37 @@ export class ReportController {
       statusCode: 201,
     });
   };
+  private async createChatBetweenUser(senderId: number, receiverId: number) {
+    try {
+      const content = "Hey I have a report related to your item";
+
+      // 1Create message in DB
+      const message = await this.messageService.createMessage(
+        senderId,
+        receiverId,
+        content
+      );
+      console.log(">>> Chat created between", senderId, "and", receiverId);
+
+      // Emit events to receiver if online
+      const receiverSocket = onlineUsers[receiverId.toString()];
+      if (receiverSocket && ioInstance) {
+        // Receiver gets the new message
+        ioInstance.to(receiverSocket).emit("receiveMessage", message);
+        // notify receiver that a new message was sent
+        ioInstance.to(receiverSocket).emit("sendMessage", message);
+      }
+
+      // Emit events to sender if online
+      const senderSocket = onlineUsers[senderId.toString()];
+      if (senderSocket && ioInstance) {
+        // Sender also sees their own message
+        ioInstance.to(senderSocket).emit("receiveMessage", message);
+        // trigger sendMessage event on sender side as well
+        ioInstance.to(senderSocket).emit("sendMessage", message);
+      }
+    } catch (error) {
+      console.error("Error creating chat:", error);
+    }
+  }
 }

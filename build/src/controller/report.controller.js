@@ -5,6 +5,8 @@ const lib_1 = require("../lib");
 const schema_1 = require("../schema");
 const service_1 = require("../service");
 const utils_1 = require("../utils");
+const message_controller_1 = require("./message.controller");
+const io_1 = require("../lib/socket/io");
 class ReportController {
     constructor() {
         this.getAllReports = async (req, res) => {
@@ -56,8 +58,12 @@ class ReportController {
             // ** Send Notification to the owner report that someone has found your
             if (parsed.data && parsed.success) {
                 const report = await this.reportService.updateReportStatus(id, parseInt(parsed.data.userId), "CHATOWNER");
-                const userIdreport = report;
+                const userIdreport = report.userId;
                 console.log(">>> Send notification to ", userIdreport);
+                // Create empty chat (optional: after confirming, notify/report owner)
+                const senderId = parseInt(parsed.data.userId); // user who confirms
+                const receiverId = userIdreport; // owner of the report
+                await this.createChatBetweenUser(senderId, receiverId);
                 return (0, utils_1.SuccessResponse)({ res, data: report, statusCode: 201 });
             }
         };
@@ -91,6 +97,35 @@ class ReportController {
         };
         this.reportService = new service_1.ReportService(lib_1.PrismaClient);
         this.userService = new service_1.UserService(lib_1.PrismaClient);
+        this.messageService = new service_1.MessageService(lib_1.PrismaClient);
+        this.messageController = new message_controller_1.MessageController();
+    }
+    async createChatBetweenUser(senderId, receiverId) {
+        try {
+            const content = "Hey I have a report related to your item";
+            // 1Create message in DB
+            const message = await this.messageService.createMessage(senderId, receiverId, content);
+            console.log(">>> Chat created between", senderId, "and", receiverId);
+            // Emit events to receiver if online
+            const receiverSocket = io_1.onlineUsers[receiverId.toString()];
+            if (receiverSocket && io_1.ioInstance) {
+                // Receiver gets the new message
+                io_1.ioInstance.to(receiverSocket).emit("receiveMessage", message);
+                // notify receiver that a new message was sent
+                io_1.ioInstance.to(receiverSocket).emit("sendMessage", message);
+            }
+            // Emit events to sender if online
+            const senderSocket = io_1.onlineUsers[senderId.toString()];
+            if (senderSocket && io_1.ioInstance) {
+                // Sender also sees their own message
+                io_1.ioInstance.to(senderSocket).emit("receiveMessage", message);
+                // trigger sendMessage event on sender side as well
+                io_1.ioInstance.to(senderSocket).emit("sendMessage", message);
+            }
+        }
+        catch (error) {
+            console.error("Error creating chat:", error);
+        }
     }
 }
 exports.ReportController = ReportController;

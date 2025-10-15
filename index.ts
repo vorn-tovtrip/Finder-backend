@@ -1,24 +1,33 @@
-import { RedisClientType } from "redis";
+import http from "http";
+import { Server } from "socket.io";
 import { AppEnv } from "./src/config/env";
 import { getRedisClient } from "./src/lib";
+import { setupChatSocket } from "./src/lib/socket/io";
 import createAppServer from "./src/server";
 
-const app = createAppServer();
-let redisClient: RedisClientType | null;
-const redisConnect = async () => {
-  try {
-    await getRedisClient();
-    console.log("Redis has been established successfully.");
-  } catch (error) {
-    console.error("Unable to connect to the database:", error);
-  }
-};
-redisConnect();
-const server = app.listen(AppEnv.PORT, async () => {
-  console.log("Welcome to express is startings");
-});
-server.on("connect", (req) => {
-  console.log("Express js server is up running");
-});
+const startServer = async () => {
+  const app = createAppServer();
+  const httpServer = http.createServer(app);
+  const io = new Server(httpServer, {
+    cors: {
+      origin: "*", // allow all origins
+      methods: ["GET", "POST"],
+      credentials: true, // allow cookies
+    },
+  });
 
-export default server;
+  // 2. Connect to Redis
+  await getRedisClient();
+  console.log("Redis has been established successfully.");
+
+  // Setup socket.io events
+  setupChatSocket(io);
+  // Start server
+  httpServer.listen(AppEnv.PORT, () => {
+    console.log(`Express + Socket.IO running on port ${AppEnv.PORT}`);
+  });
+};
+
+startServer();
+
+export default startServer;

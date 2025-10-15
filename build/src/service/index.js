@@ -18,3 +18,4 @@ __exportStar(require("./user.service"), exports);
 __exportStar(require("./image.service"), exports);
 __exportStar(require("./report.service"), exports);
 __exportStar(require("./category.service"), exports);
+__exportStar(require("./message.service"), exports);
