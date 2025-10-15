@@ -176,17 +176,49 @@ class ReportService {
             },
         });
     }
+    async addScoreAndCheckBadge(userId, incrementBy = 1) {
+        const updatedUser = await this.prisma.user.update({
+            where: { id: userId },
+            data: { totalScore: { increment: incrementBy } },
+            select: { id: true, totalScore: true },
+        });
+        // find eligible badges
+        const eligibleBadges = await this.prisma.badge.findMany({
+            where: { requiredScore: { lte: updatedUser.totalScore } },
+        });
+        // find owned badges
+        const ownedBadges = await this.prisma.userBadge.findMany({
+            where: { userId },
+            select: { badgeId: true },
+        });
+        const ownedIds = ownedBadges.map((b) => b.badgeId);
+        // add missing badges
+        const newBadges = eligibleBadges.filter((b) => !ownedIds.includes(b.id));
+        if (newBadges.length > 0) {
+            await this.prisma.userBadge.createMany({
+                data: newBadges.map((b) => ({
+                    userId,
+                    badgeId: b.id,
+                })),
+                skipDuplicates: true,
+            });
+        }
+        return updatedUser;
+    }
     /**
      * Update only report status
      */
     async updateReportStatus(id, userId, status) {
-        return this.prisma.report.update({
+        const report = await this.prisma.report.update({
             where: {
                 userId: userId,
                 id,
             },
             data: { status },
         });
+        //*** **** Update user score here **** ****
+        await this.addScoreAndCheckBadge(userId, 1);
+        return report;
     }
 }
 exports.ReportService = ReportService;

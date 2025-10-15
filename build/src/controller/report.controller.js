@@ -53,9 +53,10 @@ class ReportController {
             const parsed = schema_1.updateStatusReportSchema.safeParse(req.body);
             // ** Add logic to send notification to the owner that own that report
             // ** User Id here is the one that report
+            // ** Send Notification to the owner report that someone has found your
             if (parsed.data && parsed.success) {
                 const report = await this.reportService.updateReportStatus(id, parseInt(parsed.data.userId), "CHATOWNER");
-                const userIdreport = report.userId;
+                const userIdreport = report;
                 console.log(">>> Send notification to ", userIdreport);
                 return (0, utils_1.SuccessResponse)({ res, data: report, statusCode: 201 });
             }
@@ -64,6 +65,7 @@ class ReportController {
             const id = Number(req.params.id);
             const parsed = schema_1.updateStatusReportSchema.safeParse(req.body);
             // ** User Id here is the one that confirm
+            // ** Send Notification to the user that you success earn a badge
             if (parsed.data && parsed.success) {
                 const report = await this.reportService.updateReportStatus(id, parseInt(parsed.data.userId), "COMPLETED");
                 return (0, utils_1.SuccessResponse)({ res, data: report, statusCode: 201 });

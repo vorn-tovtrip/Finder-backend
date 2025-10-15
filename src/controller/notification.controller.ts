@@ -1,7 +1,8 @@
 import { Request, Response } from "express";
 import { PrismaClient } from "../lib";
 import { NotificationService } from "../service/notification.service";
-import { SuccessResponse } from "../utils";
+import { ErrorResponse, SuccessResponse } from "../utils";
+import { CreateNotificationDTO } from "../dto/notification.dto";
 
 export class NotificationController {
   private readonly notificationService: NotificationService;
@@ -29,9 +30,22 @@ export class NotificationController {
     return SuccessResponse({ res, data: notifications, statusCode: 200 });
   };
 
-  create = async (req: Request, res: Response) => {
-    const notification = await this.notificationService.create(req.body);
-    return SuccessResponse({ res, data: notification, statusCode: 201 });
+  create = async (req: Request, res: Response<CreateNotificationDTO>) => {
+    try {
+      const notification = await this.notificationService.create(req.body);
+      return SuccessResponse({
+        res,
+        data: notification,
+        statusCode: 201,
+      });
+    } catch (error) {
+      return ErrorResponse({
+        res,
+        statusCode: 500,
+        data: null,
+        error: error instanceof Error ? error.message : "Internal server error",
+      });
+    }
   };
 
   update = async (req: Request<{ id: string }>, res: Response) => {

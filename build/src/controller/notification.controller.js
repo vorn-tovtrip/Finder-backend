@@ -23,8 +23,22 @@ class NotificationController {
             return (0, utils_1.SuccessResponse)({ res, data: notifications, statusCode: 200 });
         };
         this.create = async (req, res) => {
-            const notification = await this.notificationService.create(req.body);
-            return (0, utils_1.SuccessResponse)({ res, data: notification, statusCode: 201 });
+            try {
+                const notification = await this.notificationService.create(req.body);
+                return (0, utils_1.SuccessResponse)({
+                    res,
+                    data: notification,
+                    statusCode: 201,
+                });
+            }
+            catch (error) {
+                return (0, utils_1.ErrorResponse)({
+                    res,
+                    statusCode: 500,
+                    data: null,
+                    error: error instanceof Error ? error.message : "Internal server error",
+                });
+            }
         };
         this.update = async (req, res) => {
             const id = parseInt(req.params.id);

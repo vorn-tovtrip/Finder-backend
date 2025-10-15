@@ -4,8 +4,12 @@ import { CreateBadgeDTO, UpdateBadgeDTO } from "../dto";
 export class BadgeService {
   constructor(private readonly prisma: PrismaClient) {}
 
-  async findAllBadges(): Promise<Badge[]> {
-    return this.prisma.badge.findMany();
+  async findAllBadges() {
+    return this.prisma.badge.findMany({
+      omit: {
+        description: true,
+      },
+    });
   }
 
   async findBadgeById(id: number): Promise<Badge | null> {

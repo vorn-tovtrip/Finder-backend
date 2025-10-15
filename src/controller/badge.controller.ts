@@ -3,7 +3,6 @@ import { Request, Response } from "express";
 import { PrismaClient } from "../lib";
 import { BadgeService } from "../service/badge.service";
 import { ErrorResponse, SuccessResponse } from "../utils";
-import { UploadService } from "../service";
 
 export class BadgeController {
   private readonly badgeService: BadgeService;

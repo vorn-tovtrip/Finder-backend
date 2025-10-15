@@ -6,7 +6,11 @@ class BadgeService {
         this.prisma = prisma;
     }
     async findAllBadges() {
-        return this.prisma.badge.findMany();
+        return this.prisma.badge.findMany({
+            omit: {
+                description: true,
+            },
+        });
     }
     async findBadgeById(id) {
         return this.prisma.badge.findUnique({ where: { id } });

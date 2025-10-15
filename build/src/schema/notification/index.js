@@ -6,6 +6,7 @@ exports.createNotificationSchema = zod_1.z.object({
     title: zod_1.z.string().min(1, "Title is required"),
     description: zod_1.z.string().min(1, "Description is required"),
     userId: zod_1.z.number().int().positive(),
+    body: zod_1.z.string().min(1, "Notification body is required"),
 });
 exports.updateNotificationSchema = zod_1.z.object({
     title: zod_1.z.string().optional(),

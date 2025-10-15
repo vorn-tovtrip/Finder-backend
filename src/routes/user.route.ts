@@ -32,6 +32,7 @@ export class UserRouter {
         handler: this.userController.getUsers.bind(this.userController),
         middlewares: [authMiddleware],
       },
+
       {
         method: "get",
         path: "/:userId/report/latest",
@@ -44,6 +45,12 @@ export class UserRouter {
         method: "put",
         path: "/:id",
         handler: this.userController.patchUser.bind(this.userController),
+        middlewares: [authMiddleware],
+      },
+      {
+        method: "get",
+        path: "/:id/badges",
+        handler: this.userController.getBadgeUsers.bind(this.userController),
         middlewares: [authMiddleware],
       },
       {

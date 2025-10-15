@@ -41,6 +41,26 @@ export class UserController {
       statusCode: 200,
     });
   };
+  getBadgeUsers = async (req: Request<{ id: string }>, res: Response) => {
+    const { id } = req.params;
+    const userId = parseInt(id);
+    const existingUser = await this.userService.findUserById(userId);
+
+    if (!existingUser) {
+      return ErrorResponse({
+        res,
+        data: null,
+        statusCode: 404,
+        error: "User not found",
+      });
+    }
+    const data = await this.userService.findUserBadges(userId);
+    return SuccessResponse({
+      res,
+      data: data,
+      statusCode: 200,
+    });
+  };
 
   loginUser = async (req: Request<{}, LoginUserDTO>, res: Response) => {
     const parsed = loginSchema.safeParse(req.body);

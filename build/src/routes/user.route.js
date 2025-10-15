@@ -34,6 +34,12 @@ class UserRouter {
             },
             {
                 method: "get",
+                path: "/:id/badges",
+                handler: this.userController.getBadgeUsers.bind(this.userController),
+                middlewares: [middleware_1.authMiddleware],
+            },
+            {
+                method: "get",
                 path: "/:id/history-report-all",
                 handler: this.userController.getReportHistoryUser.bind(this.userController),
                 middlewares: [middleware_1.authMiddleware, middleware_1.validateReportQueryMiddleware],

@@ -19,6 +19,25 @@ class UserController {
                 statusCode: 200,
             });
         };
+        this.getBadgeUsers = async (req, res) => {
+            const { id } = req.params;
+            const userId = parseInt(id);
+            const existingUser = await this.userService.findUserById(userId);
+            if (!existingUser) {
+                return (0, utils_1.ErrorResponse)({
+                    res,
+                    data: null,
+                    statusCode: 404,
+                    error: "User not found",
+                });
+            }
+            const data = await this.userService.findUserBadges(userId);
+            return (0, utils_1.SuccessResponse)({
+                res,
+                data: data,
+                statusCode: 200,
+            });
+        };
         this.loginUser = async (req, res) => {
             const parsed = schema_1.loginSchema.safeParse(req.body);
             if (parsed.success) {

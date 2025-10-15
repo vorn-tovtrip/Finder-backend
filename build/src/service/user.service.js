@@ -33,6 +33,29 @@ class UserService {
             },
         });
     }
+    findByNotification(userId) {
+        return this.prismaClient.notification.findMany({
+            where: {
+                userId: userId,
+            },
+        });
+    }
+    async findUserBadges(userId) {
+        return this.prismaClient.userBadge.findMany({
+            where: { userId },
+            include: {
+                badge: {
+                    select: {
+                        id: true,
+                        name: true,
+                        iconUrl: true,
+                        requiredScore: true,
+                    },
+                },
+            },
+            orderBy: { createdAt: "desc" },
+        });
+    }
     async findUserExist(email) {
         const user = await this.prismaClient.user.findFirst({
             where: {
