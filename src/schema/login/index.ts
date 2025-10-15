@@ -18,7 +18,10 @@ export const loginSchema = z.object({
 });
 
 export const socialAuthSchema = z.object({
-  email: z.string().email(),
+  email: z
+    .string()
+    .email({ message: "Must be a valid email address" })
+    .optional(),
   username: z
     .string()
     .min(3, "Username must be at least 3 characters")

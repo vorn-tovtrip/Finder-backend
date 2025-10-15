@@ -5,6 +5,7 @@ const client_1 = require("@prisma/client");
 const constant_1 = require("../constant");
 const lib_1 = require("../lib");
 const storage_1 = require("../lib/firebase/storage");
+const helper_1 = require("../utils/helper");
 const schema_1 = require("../schema");
 const service_1 = require("../service");
 const types_1 = require("../types");
@@ -165,12 +166,16 @@ class UserController {
                 });
             }
             const data = parsed.data;
-            let user = await this.userService.findUserExist(data.email);
+            let email = data.email;
+            if (!data.email) {
+                email = (0, helper_1.generateUniqueEmail)();
+            }
+            let user = await this.userService.findUserExist(email);
             const isNewUser = !user;
             if (!user) {
                 user = await this.userService.registerUserEmail({
-                    email: data.email,
-                    username: data.username || data.email.split("@")[0],
+                    email: email,
+                    username: data.username || email.split("@")[0],
                     avatar: data.avatar || "",
                     password: "social-auth",
                     method: data.method,

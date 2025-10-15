@@ -22,7 +22,10 @@ exports.loginSchema = zod_1.default.object({
     }),
 });
 exports.socialAuthSchema = zod_1.default.object({
-    email: zod_1.default.string().email(),
+    email: zod_1.default
+        .string()
+        .email({ message: "Must be a valid email address" })
+        .optional(),
     username: zod_1.default
         .string()
         .min(3, "Username must be at least 3 characters")

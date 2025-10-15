@@ -4,6 +4,7 @@ import { TOKEN_EXPIRATION } from "../constant";
 import { LoginUserDTO, RegisterUserDTO } from "../dto";
 import { getRedisClient, PrismaClient } from "../lib";
 import { StorageService } from "../lib/firebase/storage";
+import { generateUniqueEmail } from "../utils/helper";
 import {
   authenticationSchema,
   loginSchema,
@@ -211,14 +212,19 @@ export class UserController {
         errors: parsed.error.format(),
       });
     }
+
     const data = parsed.data;
-    let user = await this.userService.findUserExist(data.email);
+    let email = data.email;
+    if (!data.email) {
+      email = generateUniqueEmail();
+    }
+    let user = await this.userService.findUserExist(email!);
     const isNewUser = !user;
 
     if (!user) {
       user = await this.userService.registerUserEmail({
-        email: data.email,
-        username: data.username || data.email.split("@")[0],
+        email: email!,
+        username: data.username || email!.split("@")[0],
         avatar: data.avatar || "",
         password: "social-auth",
         method: data.method,
