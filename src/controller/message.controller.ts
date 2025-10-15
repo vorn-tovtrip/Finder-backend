@@ -1,4 +1,4 @@
-import { Request, Response } from "express";
+import { NextFunction, Request, Response } from "express";
 import { Socket } from "socket.io";
 import { PrismaClient } from "../lib";
 import { MessageService } from "../service";
@@ -43,6 +43,15 @@ export class MessageController {
       return res.status(500).json({ message: "Internal server error" });
     }
   }
+
+  async deleteAllMessage(req: Request, res: Response, next: NextFunction) {
+    try {
+      const messages = await this.messageService.deleteAll();
+      return SuccessResponse({ res, data: messages, statusCode: 201 });
+    } catch (error) {
+      next(error);
+    }
+  }
   async handleSendMessage(
     socket: Socket,
     onlineUsers: Record<string, string>,
@@ -75,9 +84,3 @@ export class MessageController {
     }
   }
 }
-
-// Client A ----sendMessage---> Server ----> Save DB
-//                                  |
-//                                  |---> Client B receiveMessage (if online)
-//                                  |
-//                                  |---> Client A receiveMessage

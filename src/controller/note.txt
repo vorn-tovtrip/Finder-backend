@@ -1,0 +1,5 @@
+// Client A ----sendMessage---> Server ----> Save DB
+//                                  |
+//                                  |---> Client B receiveMessage (if online)
+//                                  |
+//                                  |---> Client A receiveMessage

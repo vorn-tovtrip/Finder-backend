@@ -19,7 +19,9 @@ export class MessageService {
       },
     });
   }
-
+  async deleteAll() {
+    await this.prismaClient.message.deleteMany({});
+  }
   async getConversations(userId: number) {
     // Group messages by the other user and get the last message
     const messages = await this.prismaClient.message.findMany({
