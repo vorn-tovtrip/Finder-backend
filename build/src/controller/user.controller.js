@@ -10,6 +10,7 @@ const schema_1 = require("../schema");
 const service_1 = require("../service");
 const types_1 = require("../types");
 const utils_1 = require("../utils");
+const badge_service_1 = require("../service/badge.service");
 class UserController {
     constructor() {
         this.getUsers = async (req, res) => {
@@ -17,6 +18,34 @@ class UserController {
             return (0, utils_1.SuccessResponse)({
                 res,
                 data: data,
+                statusCode: 200,
+            });
+        };
+        this.showAllbadgesUser = async (req, res) => {
+            const { id } = req.params;
+            const userId = parseInt(id);
+            const existingUser = await this.userService.findUserById(userId);
+            if (!existingUser) {
+                return (0, utils_1.ErrorResponse)({
+                    res,
+                    data: null,
+                    statusCode: 404,
+                    error: "User not found",
+                });
+            }
+            const allBadges = await this.badgeService.findAllBadges();
+            const currBadges = await this.userService.findUserBadges(userId);
+            const userBadgeIds = new Set(currBadges.map((b) => b.id));
+            const mutateBadges = allBadges?.map((item) => {
+                if (userBadgeIds.has(item.id)) {
+                    return { ...item, owned: true };
+                }
+                return { ...item, owned: false };
+            });
+            console.log(mutateBadges);
+            return (0, utils_1.SuccessResponse)({
+                res,
+                data: mutateBadges,
                 statusCode: 200,
             });
         };
@@ -110,7 +139,7 @@ class UserController {
                     });
                 }
                 // Validate JSON body
-                const parsed = schema_1.updateUserSchema.safeParse(req.body);
+                const parsed = schema_1.updateProfileSchema.safeParse(req.body);
                 if (!parsed.success) {
                     return (0, utils_1.ErrorResponse)({
                         res,
@@ -337,6 +366,7 @@ class UserController {
         };
         this.userService = new service_1.UserService(lib_1.PrismaClient);
         this.storageService = new storage_1.StorageService();
+        this.badgeService = new badge_service_1.BadgeService(lib_1.PrismaClient);
         this.uploadService = new service_1.UploadService(lib_1.PrismaClient);
         this.reportService = new service_1.ReportService(lib_1.PrismaClient);
     }

@@ -74,9 +74,19 @@ export class ReportController {
     return SuccessResponse({ res, data: report, statusCode: 201 });
   };
 
-  updateStatusChatOwner = async (req: Request, res: Response) => {
+  updateStatusChatOwner = async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ) => {
     const id = Number(req.params.id);
+    console.log("Params i", id);
     const parsed = updateStatusReportSchema.safeParse(req.body);
+
+    const reportExist = await this.reportService.findReportById(id);
+    if (!reportExist) {
+      next("Report does not exist with that id");
+    }
 
     // ** Add logic to send notification to the owner that own that report
     // ** User Id here is the one that report
@@ -85,37 +95,52 @@ export class ReportController {
     if (parsed.data && parsed.success) {
       const report = await this.reportService.updateReportStatus(
         id,
-        parseInt(parsed.data.userId),
+        parsed.data.userId,
         "CHATOWNER"
       );
       const userIdreport = report.userId;
       console.log(">>> Send notification to ", userIdreport);
       // Create empty chat (optional: after confirming, notify/report owner)
-      const senderId = parseInt(parsed.data.userId); // user who confirms
+      const senderId = parsed.data.userId; // user who confirms
       const receiverId = userIdreport; // owner of the report
       await this.createChatBetweenUser(senderId, receiverId);
       return SuccessResponse({ res, data: report, statusCode: 201 });
     }
   };
-  updateStatusConfirm = async (req: Request, res: Response) => {
+  updateStatusConfirm = async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ) => {
     const id = Number(req.params.id);
     const parsed = updateStatusReportSchema.safeParse(req.body);
-
+    const reportExist = await this.reportService.findReportById(id);
+    if (!reportExist) {
+      next("Report does not exist with that id");
+    }
     // ** User Id here is the one that confirm
     // ** Send Notification to the user that you success earn a badge
     if (parsed.data && parsed.success) {
       const report = await this.reportService.updateReportStatus(
         id,
-        parseInt(parsed.data.userId),
+        parsed.data.userId,
         "COMPLETED"
       );
 
       return SuccessResponse({ res, data: report, statusCode: 201 });
     }
   };
-  updateStatusCancel = async (req: Request, res: Response) => {
+  updateStatusCancel = async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ) => {
     const id = Number(req.params.id);
     const parsed = updateStatusReportSchema.safeParse(req.body);
+    const reportExist = await this.reportService.findReportById(id);
+    if (!reportExist) {
+      next("Report does not exist with that id");
+    }
 
     // ** Need user id just incase not delete that report
     if (parsed.data && parsed.success) {
@@ -123,8 +148,12 @@ export class ReportController {
       return SuccessResponse({ res, data: report, statusCode: 201 });
     }
   };
-  deleteReport = async (req: Request, res: Response) => {
+  deleteReport = async (req: Request, res: Response, next: NextFunction) => {
     const id = Number(req.params.id);
+    const reportExist = await this.reportService.findReportById(id);
+    if (!reportExist) {
+      next("Report does not exist with that id");
+    }
     const report = await this.reportService.deleteReport(id);
     return SuccessResponse({
       res,

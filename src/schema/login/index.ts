@@ -36,3 +36,19 @@ export const socialAuthSchema = z.object({
     .regex(/^\+?\d{10,15}$/, "Invalid phone number")
     .optional(),
 });
+
+export const updateProfileSchema = z.object({
+  email: z
+    .string()
+    .email({ message: "Must be a valid email address" })
+    .optional(),
+  username: z
+    .string()
+    .min(3, "Username must be at least 3 characters")
+    .optional(),
+  avatar: z.string().url().optional(),
+  phone: z
+    .string()
+    .regex(/^\+?\d{10,15}$/, "Invalid phone number")
+    .optional(),
+});

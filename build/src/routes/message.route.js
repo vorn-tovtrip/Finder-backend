@@ -32,6 +32,13 @@ class MessageRouter {
                 middlewares: [middleware_1.authMiddleware],
                 //Then when the user clicks on a conversation, you fetch /messages?userA=X&userB=Y for the chat.
             },
+            {
+                method: "delete",
+                path: "/delete-all",
+                handler: this.controller.deleteAllMessage.bind(this.controller),
+                middlewares: [middleware_1.authMiddleware],
+                //Then when the user clicks on a conversation, you fetch /messages?userA=X&userB=Y for the chat.
+            },
         ];
         routes.forEach((route) => {
             if (route.middlewares && route.middlewares.length > 0) {

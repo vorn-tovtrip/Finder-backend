@@ -40,6 +40,12 @@ class UserRouter {
             },
             {
                 method: "get",
+                path: "/:id/badges/showall",
+                handler: this.userController.showAllbadgesUser.bind(this.userController),
+                middlewares: [middleware_1.authMiddleware],
+            },
+            {
+                method: "get",
                 path: "/:id/history-report-all",
                 handler: this.userController.getReportHistoryUser.bind(this.userController),
                 middlewares: [middleware_1.authMiddleware, middleware_1.validateReportQueryMiddleware],
@@ -79,7 +85,7 @@ class UserRouter {
                 handler: this.userController.patchUser.bind(this.userController),
                 middlewares: [
                     middleware_1.authMiddleware,
-                    (0, middleware_1.validateSchemaMiddleware)(schema_1.updateUserSchema),
+                    (0, middleware_1.validateSchemaMiddleware)(schema_1.updateProfileSchema),
                 ],
             },
             {

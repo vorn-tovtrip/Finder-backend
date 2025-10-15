@@ -9,6 +9,7 @@ import {
   authenticationSchema,
   loginSchema,
   socialAuthSchema,
+  updateProfileSchema,
   updateUserSchema,
 } from "../schema";
 import { ReportService, UploadService, UserService } from "../service";
@@ -20,16 +21,19 @@ import {
   signJwt,
   SuccessResponse,
 } from "../utils";
+import { BadgeService } from "../service/badge.service";
 
 export class UserController {
   private userService: UserService;
   private storageService: StorageService;
   private uploadService: UploadService;
   private reportService: ReportService;
+  private badgeService: BadgeService;
 
   constructor() {
     this.userService = new UserService(PrismaClient);
     this.storageService = new StorageService();
+    this.badgeService = new BadgeService(PrismaClient);
     this.uploadService = new UploadService(PrismaClient);
     this.reportService = new ReportService(PrismaClient);
   }
@@ -39,6 +43,39 @@ export class UserController {
     return SuccessResponse({
       res,
       data: data,
+      statusCode: 200,
+    });
+  };
+  showAllbadgesUser = async (req: Request<{ id: string }>, res: Response) => {
+    const { id } = req.params;
+    const userId = parseInt(id);
+    const existingUser = await this.userService.findUserById(userId);
+
+    if (!existingUser) {
+      return ErrorResponse({
+        res,
+        data: null,
+        statusCode: 404,
+        error: "User not found",
+      });
+    }
+
+    const allBadges = await this.badgeService.findAllBadges();
+    const currBadges = await this.userService.findUserBadges(userId);
+    const userBadgeIds = new Set(currBadges.map((b) => b.id));
+
+    const mutateBadges = allBadges?.map((item) => {
+      if (userBadgeIds.has(item.id)) {
+        return { ...item, owned: true };
+      }
+
+      return { ...item, owned: false };
+    });
+    console.log(mutateBadges);
+
+    return SuccessResponse({
+      res,
+      data: mutateBadges,
       statusCode: 200,
     });
   };
@@ -151,7 +188,7 @@ export class UserController {
       }
 
       // Validate JSON body
-      const parsed = updateUserSchema.safeParse(req.body);
+      const parsed = updateProfileSchema.safeParse(req.body);
       if (!parsed.success) {
         return ErrorResponse({
           res,

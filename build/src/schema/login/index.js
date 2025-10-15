@@ -3,7 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.socialAuthSchema = exports.loginSchema = void 0;
+exports.updateProfileSchema = exports.socialAuthSchema = exports.loginSchema = void 0;
 const zod_1 = __importDefault(require("zod"));
 const types_1 = require("../../types");
 exports.loginSchema = zod_1.default.object({
@@ -35,6 +35,21 @@ exports.socialAuthSchema = zod_1.default.object({
         errorMap: () => ({ message: "Invalid login method" }),
     }),
     socialToken: zod_1.default.string(),
+    phone: zod_1.default
+        .string()
+        .regex(/^\+?\d{10,15}$/, "Invalid phone number")
+        .optional(),
+});
+exports.updateProfileSchema = zod_1.default.object({
+    email: zod_1.default
+        .string()
+        .email({ message: "Must be a valid email address" })
+        .optional(),
+    username: zod_1.default
+        .string()
+        .min(3, "Username must be at least 3 characters")
+        .optional(),
+    avatar: zod_1.default.string().url().optional(),
     phone: zod_1.default
         .string()
         .regex(/^\+?\d{10,15}$/, "Invalid phone number")

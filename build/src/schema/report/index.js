@@ -31,5 +31,5 @@ exports.createReportSchema = zod_1.z.object({
 });
 exports.updateReportSchema = exports.createReportSchema.partial();
 exports.updateStatusReportSchema = zod_1.z.object({
-    userId: zod_1.z.string().min(1, "User Id is required"),
+    userId: zod_1.z.number().min(1, "User Id is required"),
 });

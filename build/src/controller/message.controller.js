@@ -33,6 +33,15 @@ class MessageController {
             return res.status(500).json({ message: "Internal server error" });
         }
     }
+    async deleteAllMessage(req, res, next) {
+        try {
+            const messages = await this.messageService.deleteAll();
+            return (0, utils_1.SuccessResponse)({ res, data: messages, statusCode: 201 });
+        }
+        catch (error) {
+            next(error);
+        }
+    }
     async handleSendMessage(socket, onlineUsers, data) {
         try {
             const { senderId, receiverId, content } = data;
@@ -54,8 +63,3 @@ class MessageController {
     }
 }
 exports.MessageController = MessageController;
-// Client A ----sendMessage---> Server ----> Save DB
-//                                  |
-//                                  |---> Client B receiveMessage (if online)
-//                                  |
-//                                  |---> Client A receiveMessage

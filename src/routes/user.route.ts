@@ -9,7 +9,7 @@ import {
   authenticationSchema,
   loginSchema,
   socialAuthSchema,
-  updateUserSchema,
+  updateProfileSchema,
 } from "../schema";
 import { RouteDefinition } from "../types/route";
 
@@ -55,6 +55,14 @@ export class UserRouter {
       },
       {
         method: "get",
+        path: "/:id/badges/showall",
+        handler: this.userController.showAllbadgesUser.bind(
+          this.userController
+        ),
+        middlewares: [authMiddleware],
+      },
+      {
+        method: "get",
         path: "/:id/history-report-all",
         handler: this.userController.getReportHistoryUser.bind(
           this.userController
@@ -96,7 +104,7 @@ export class UserRouter {
         handler: this.userController.patchUser.bind(this.userController),
         middlewares: [
           authMiddleware,
-          validateSchemaMiddleware(updateUserSchema),
+          validateSchemaMiddleware(updateProfileSchema),
         ],
       },
       {

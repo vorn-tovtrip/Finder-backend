@@ -211,8 +211,7 @@ class ReportService {
     async updateReportStatus(id, userId, status) {
         const report = await this.prisma.report.update({
             where: {
-                userId: userId,
-                id,
+                id: id,
             },
             data: { status },
         });

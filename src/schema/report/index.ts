@@ -33,5 +33,5 @@ export const createReportSchema = z.object({
 
 export const updateReportSchema = createReportSchema.partial();
 export const updateStatusReportSchema = z.object({
-  userId: z.string().min(1, "User Id is required"),
+  userId: z.number().min(1, "User Id is required"),
 });

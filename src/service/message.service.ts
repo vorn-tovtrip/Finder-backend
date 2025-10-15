@@ -6,12 +6,11 @@ export class MessageService {
     this.prismaClient = prismaClient;
   }
 
-  async createMessage(
-    senderId: number,
-    receiverId: number,
-    content: string
-  ): Promise<Message> {
+  async createMessage(senderId: number, receiverId: number, content: string) {
     return this.prismaClient.message.create({
+      omit: {
+        userId: true,
+      },
       data: {
         senderId,
         receiverId,
@@ -27,6 +26,9 @@ export class MessageService {
     const messages = await this.prismaClient.message.findMany({
       where: {
         OR: [{ senderId: userId }, { receiverId: userId }],
+      },
+      omit: {
+        userId: true,
       },
       orderBy: { createdAt: "desc" },
     });
@@ -50,14 +52,20 @@ export class MessageService {
 
   async findAll() {
     return this.prismaClient.message.findMany({
+      omit: {
+        userId: true,
+      },
       orderBy: {
         updatedAt: "desc",
       },
     });
   }
 
-  async getMessagesBetween(user1: number, user2: number): Promise<Message[]> {
+  async getMessagesBetween(user1: number, user2: number) {
     return this.prismaClient.message.findMany({
+      omit: {
+        userId: true,
+      },
       where: {
         OR: [
           { senderId: user1, receiverId: user2 },

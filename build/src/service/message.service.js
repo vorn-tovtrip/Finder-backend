@@ -7,6 +7,9 @@ class MessageService {
     }
     async createMessage(senderId, receiverId, content) {
         return this.prismaClient.message.create({
+            omit: {
+                userId: true,
+            },
             data: {
                 senderId,
                 receiverId,
@@ -14,11 +17,17 @@ class MessageService {
             },
         });
     }
+    async deleteAll() {
+        await this.prismaClient.message.deleteMany({});
+    }
     async getConversations(userId) {
         // Group messages by the other user and get the last message
         const messages = await this.prismaClient.message.findMany({
             where: {
                 OR: [{ senderId: userId }, { receiverId: userId }],
+            },
+            omit: {
+                userId: true,
             },
             orderBy: { createdAt: "desc" },
         });
@@ -37,6 +46,9 @@ class MessageService {
     }
     async findAll() {
         return this.prismaClient.message.findMany({
+            omit: {
+                userId: true,
+            },
             orderBy: {
                 updatedAt: "desc",
             },
@@ -44,6 +56,9 @@ class MessageService {
     }
     async getMessagesBetween(user1, user2) {
         return this.prismaClient.message.findMany({
+            omit: {
+                userId: true,
+            },
             where: {
                 OR: [
                     { senderId: user1, receiverId: user2 },

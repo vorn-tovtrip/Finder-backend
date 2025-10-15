@@ -23,6 +23,9 @@ class UserService {
         return this.prismaClient.user.findMany({
             include: {
                 images: {
+                    where: {
+                        reportId: null,
+                    },
                     select: {
                         url: true,
                     },
@@ -41,7 +44,7 @@ class UserService {
         });
     }
     async findUserBadges(userId) {
-        return this.prismaClient.userBadge.findMany({
+        const userBadges = await this.prismaClient.userBadge.findMany({
             where: { userId },
             include: {
                 badge: {
@@ -55,6 +58,7 @@ class UserService {
             },
             orderBy: { createdAt: "desc" },
         });
+        return userBadges.map((ub) => ub.badge);
     }
     async findUserExist(email) {
         const user = await this.prismaClient.user.findFirst({
@@ -71,6 +75,9 @@ class UserService {
             },
             include: {
                 images: {
+                    where: {
+                        reportId: null,
+                    },
                     select: {
                         url: true,
                         id: true,
@@ -88,13 +95,12 @@ class UserService {
         });
     }
     async updateUser(id, payload) {
+        // Filter out null, undefined, or empty string fields
+        const dataToUpdate = Object.fromEntries(Object.entries(payload).filter(([_, value]) => value !== null && value !== undefined && value !== ""));
         return await this.prismaClient.user.update({
-            where: {
-                id: id,
-            },
-            data: {
-                ...payload,
-            },
+            where: { id },
+            omit: { password: true },
+            data: dataToUpdate,
         });
     }
     async registerUserEmail(params) {
