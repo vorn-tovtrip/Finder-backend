@@ -1,18 +1,17 @@
 import { ReportStatus, ReportType, User } from "@prisma/client";
-import { NextFunction, Request, Response } from "express";
+import { Request, Response } from "express";
 import { TOKEN_EXPIRATION } from "../constant";
 import { LoginUserDTO, RegisterUserDTO } from "../dto";
 import { getRedisClient, PrismaClient } from "../lib";
 import { StorageService } from "../lib/firebase/storage";
-import { generateUniqueEmail } from "../utils/helper";
 import {
   authenticationSchema,
   loginSchema,
   socialAuthSchema,
   updateProfileSchema,
-  updateUserSchema,
 } from "../schema";
 import { ReportService, UploadService, UserService } from "../service";
+import { BadgeService } from "../service/badge.service";
 import { ApiResponse, LoginMethod, RegisterPayload } from "../types";
 import {
   BcryptHelper,
@@ -21,7 +20,7 @@ import {
   signJwt,
   SuccessResponse,
 } from "../utils";
-import { BadgeService } from "../service/badge.service";
+import { extractFilePathFromUrl, generateUniqueEmail } from "../utils/helper";
 
 export class UserController {
   private userService: UserService;
@@ -43,6 +42,26 @@ export class UserController {
     return SuccessResponse({
       res,
       data: data,
+      statusCode: 200,
+    });
+  };
+  getUserById = async (req: Request, res: Response) => {
+    const { id } = req.params;
+    const userId = parseInt(id);
+    const existingUser = await this.userService.findUserById(userId);
+
+    if (!existingUser) {
+      return ErrorResponse({
+        res,
+        data: null,
+        statusCode: 404,
+        error: "User is not found",
+      });
+    }
+
+    return SuccessResponse({
+      res,
+      data: existingUser,
       statusCode: 200,
     });
   };
@@ -167,51 +186,53 @@ export class UserController {
     });
   };
 
-  patchUser = async (
-    req: Request<{ id: string }>,
-    res: Response,
-    next: NextFunction
-  ) => {
+  updateUser = async (req: Request<{ id: string }>, res: Response) => {
     const { id } = req.params;
+    const userId = parseInt(id);
+    const existingUser = await this.userService.findUserById(userId);
 
-    try {
-      const userId = parseInt(id);
-      const existingUser = await this.userService.findUserById(userId);
+    if (!existingUser) {
+      return ErrorResponse({
+        res,
+        data: null,
+        statusCode: 404,
+        error: "User is not found",
+      });
+    }
 
-      if (!existingUser) {
-        return ErrorResponse({
-          res,
-          data: null,
-          statusCode: 404,
-          error: "User not found",
-        });
-      }
+    // Validate JSON body
+    const parsed = updateProfileSchema.safeParse(req.body);
+    if (parsed.success) {
+      const { username, email, phone, avatar, address } = parsed.data;
 
-      // Validate JSON body
-      const parsed = updateProfileSchema.safeParse(req.body);
-      if (!parsed.success) {
-        return ErrorResponse({
-          res,
-          data: null,
-          statusCode: 400,
-          error: parsed.error.format(),
-        });
-      }
-
-      const { username, email, phone, avatar } = parsed.data;
-      let finalAvatar = existingUser.images?.[0]?.url ?? "";
+      let image;
+      let finalAvatar = existingUser.profileImages?.[0]?.url ?? "";
       let imageId = undefined;
-      imageId = existingUser.images?.[0]?.id;
-      if (typeof avatar === "string") {
+      imageId = existingUser.profileImages?.[0]?.id;
+      image = existingUser.profileImages?.[0];
+      console.log("image id is", imageId);
+      if (typeof avatar === "string" && avatar != "") {
         // Check if URL already exists in DB
-        const matchedImage = existingUser.images?.find(
-          (img) => img.url === avatar
-        );
-        if (matchedImage) {
+
+        if (imageId) {
           //This case we need to delete old image first
-          await this.storageService.deleteFile(matchedImage.url);
-          finalAvatar = matchedImage.url;
-          imageId = matchedImage.id;
+          const path = extractFilePathFromUrl(image?.url);
+
+          finalAvatar = image?.url;
+          imageId = imageId;
+          console.log("Path is", path);
+          console.log("avatar is", finalAvatar);
+          await this.storageService.deleteFile(path);
+          await this.uploadService.deleteProfileImageById(imageId);
+          await this.uploadService.createProfileImage(avatar, userId);
+        } else {
+          // Create the  new image
+          const newImage = await this.uploadService.createProfileImage(
+            avatar,
+            userId
+          );
+          finalAvatar = newImage.url;
+          imageId = newImage.id;
         }
       }
 
@@ -220,23 +241,22 @@ export class UserController {
         name: username,
         email,
         phone,
+        address,
         avatar: finalAvatar,
       });
-
-      // Update image record if ID exists
-      if (imageId) {
-        await this.uploadService.updateById(imageId, finalAvatar);
-      }
 
       return SuccessResponse({
         res,
         data: updatedUser,
         statusCode: 200,
       });
-    } catch (error) {
-      console.error("Error updating user:", error);
-      return next(error);
     }
+
+    return SuccessResponse({
+      res,
+      data: null,
+      statusCode: 200,
+    });
   };
 
   socialAuth = async (req: Request, res: Response) => {

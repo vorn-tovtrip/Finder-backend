@@ -5,12 +5,12 @@ const client_1 = require("@prisma/client");
 const constant_1 = require("../constant");
 const lib_1 = require("../lib");
 const storage_1 = require("../lib/firebase/storage");
-const helper_1 = require("../utils/helper");
 const schema_1 = require("../schema");
 const service_1 = require("../service");
+const badge_service_1 = require("../service/badge.service");
 const types_1 = require("../types");
 const utils_1 = require("../utils");
-const badge_service_1 = require("../service/badge.service");
+const helper_1 = require("../utils/helper");
 class UserController {
     constructor() {
         this.getUsers = async (req, res) => {
@@ -18,6 +18,24 @@ class UserController {
             return (0, utils_1.SuccessResponse)({
                 res,
                 data: data,
+                statusCode: 200,
+            });
+        };
+        this.getUserById = async (req, res) => {
+            const { id } = req.params;
+            const userId = parseInt(id);
+            const existingUser = await this.userService.findUserById(userId);
+            if (!existingUser) {
+                return (0, utils_1.ErrorResponse)({
+                    res,
+                    data: null,
+                    statusCode: 404,
+                    error: "User is not found",
+                });
+            }
+            return (0, utils_1.SuccessResponse)({
+                res,
+                data: existingUser,
                 statusCode: 200,
             });
         };
@@ -125,41 +143,46 @@ class UserController {
                 statusCode: 200,
             });
         };
-        this.patchUser = async (req, res, next) => {
+        this.updateUser = async (req, res) => {
             const { id } = req.params;
-            try {
-                const userId = parseInt(id);
-                const existingUser = await this.userService.findUserById(userId);
-                if (!existingUser) {
-                    return (0, utils_1.ErrorResponse)({
-                        res,
-                        data: null,
-                        statusCode: 404,
-                        error: "User not found",
-                    });
-                }
-                // Validate JSON body
-                const parsed = schema_1.updateProfileSchema.safeParse(req.body);
-                if (!parsed.success) {
-                    return (0, utils_1.ErrorResponse)({
-                        res,
-                        data: null,
-                        statusCode: 400,
-                        error: parsed.error.format(),
-                    });
-                }
-                const { username, email, phone, avatar } = parsed.data;
-                let finalAvatar = existingUser.images?.[0]?.url ?? "";
+            const userId = parseInt(id);
+            const existingUser = await this.userService.findUserById(userId);
+            if (!existingUser) {
+                return (0, utils_1.ErrorResponse)({
+                    res,
+                    data: null,
+                    statusCode: 404,
+                    error: "User is not found",
+                });
+            }
+            // Validate JSON body
+            const parsed = schema_1.updateProfileSchema.safeParse(req.body);
+            if (parsed.success) {
+                const { username, email, phone, avatar, address } = parsed.data;
+                let image;
+                let finalAvatar = existingUser.profileImages?.[0]?.url ?? "";
                 let imageId = undefined;
-                imageId = existingUser.images?.[0]?.id;
-                if (typeof avatar === "string") {
+                imageId = existingUser.profileImages?.[0]?.id;
+                image = existingUser.profileImages?.[0];
+                console.log("image id is", imageId);
+                if (typeof avatar === "string" && avatar != "") {
                     // Check if URL already exists in DB
-                    const matchedImage = existingUser.images?.find((img) => img.url === avatar);
-                    if (matchedImage) {
+                    if (imageId) {
                         //This case we need to delete old image first
-                        await this.storageService.deleteFile(matchedImage.url);
-                        finalAvatar = matchedImage.url;
-                        imageId = matchedImage.id;
+                        const path = (0, helper_1.extractFilePathFromUrl)(image?.url);
+                        finalAvatar = image?.url;
+                        imageId = imageId;
+                        console.log("Path is", path);
+                        console.log("avatar is", finalAvatar);
+                        await this.storageService.deleteFile(path);
+                        await this.uploadService.deleteProfileImageById(imageId);
+                        await this.uploadService.createProfileImage(avatar, userId);
+                    }
+                    else {
+                        // Create the  new image
+                        const newImage = await this.uploadService.createProfileImage(avatar, userId);
+                        finalAvatar = newImage.url;
+                        imageId = newImage.id;
                     }
                 }
                 // Update user
@@ -167,22 +190,20 @@ class UserController {
                     name: username,
                     email,
                     phone,
+                    address,
                     avatar: finalAvatar,
                 });
-                // Update image record if ID exists
-                if (imageId) {
-                    await this.uploadService.updateById(imageId, finalAvatar);
-                }
                 return (0, utils_1.SuccessResponse)({
                     res,
                     data: updatedUser,
                     statusCode: 200,
                 });
             }
-            catch (error) {
-                console.error("Error updating user:", error);
-                return next(error);
-            }
+            return (0, utils_1.SuccessResponse)({
+                res,
+                data: null,
+                statusCode: 200,
+            });
         };
         this.socialAuth = async (req, res) => {
             const redisClient = await (0, lib_1.getRedisClient)();

@@ -41,14 +41,22 @@ export const updateProfileSchema = z.object({
   email: z
     .string()
     .email({ message: "Must be a valid email address" })
-    .optional(),
+    .optional()
+    .nullable(),
   username: z
     .string()
     .min(3, "Username must be at least 3 characters")
+    .nullable()
     .optional(),
-  avatar: z.string().url().optional(),
+  avatar: z.string().nullable().optional(),
+  password: z
+    .string()
+    .min(6, "Password must be at least 6 characters")
+    .nullable()
+    .optional(),
+  address: z.string().nullable().optional(),
   phone: z
     .string()
     .regex(/^\+?\d{10,15}$/, "Invalid phone number")
-    .optional(),
+    .nullable(),
 });

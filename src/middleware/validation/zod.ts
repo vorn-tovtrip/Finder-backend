@@ -5,6 +5,7 @@ export const validateSchemaMiddleware =
   <T extends ZodTypeAny>(schema: T) =>
   (req: Request, _: Response, next: NextFunction): void => {
     const parsed = schema.safeParse(req.body);
+    console.log("Middle ware validation run");
     if (!parsed.success) {
       // Send validation errors or pass to error handler
       return next(parsed.error);

@@ -12,7 +12,7 @@
     "postinstall": "prisma generate",
     "prisma:generate:dev": "npx dotenv -e .env.development -- prisma generate",
     "prisma:generate:prod": "npx dotenv -e .env.production -- prisma generate",
-    "prisma:migrate:dev": "npx dotenv -e .env.development -- prisma migrate dev --name alter-updatedat-table-dev",
+    "prisma:migrate:dev": "npx dotenv -e .env.development -- prisma migrate dev --name alter-report-table-dev",
     "prisma:migrate:prod": "npx dotenv -e .env.production -- prisma migrate deploy --name report-user-prod"
   },
   "author": "",

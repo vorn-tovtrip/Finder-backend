@@ -30,9 +30,10 @@ export type OTPVerify = {
 };
 
 export interface UpdateUser {
-  name: string;
-  email: string;
-  phone?: string;
-  avatar?: string;
+  name: string | null;
+  email: string | null;
+  phone?: string | null;
+  avatar?: string | null;
+  address?: string | null;
 }
 export type UpdateUserPayload = Partial<UpdateUser>;

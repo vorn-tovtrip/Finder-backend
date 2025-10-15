@@ -24,6 +24,7 @@ class StorageService {
     }
     async deleteFile(filePath) {
         try {
+            console.log("File path to delete is", filePath);
             const fileRef = firebase_1.bucket.file(filePath);
             await fileRef.delete();
         }

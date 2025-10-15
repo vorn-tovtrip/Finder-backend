@@ -100,6 +100,18 @@ export class ReportService {
       },
     });
   }
+  async updateReportConfirm(
+    reportId: number,
+    data: { confirmedByPosterId?: number; confirmedByClaimerId?: number }
+  ) {
+    const updatedReport = await this.prisma.report.update({
+      where: { id: reportId },
+      data,
+    });
+
+    return updatedReport;
+  }
+
   async findReportHistoryByUser({
     userId,
     status,
@@ -244,10 +256,16 @@ export class ReportService {
       where: {
         id: id,
       },
+
       data: { status },
     });
     //*** **** Update user score here **** ****
-    await this.addScoreAndCheckBadge(userId, 1);
+    const userIdReward =
+      report.type == ReportType.FOUND
+        ? report.userId
+        : report.confirmedByClaimerId!;
+
+    await this.addScoreAndCheckBadge(userIdReward, 1);
     return report;
   }
 }

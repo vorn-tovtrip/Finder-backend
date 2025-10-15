@@ -1,6 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.ReportService = void 0;
+const client_1 = require("@prisma/client");
 class ReportService {
     constructor(prisma) {
         this.prisma = prisma;
@@ -86,6 +87,13 @@ class ReportService {
                 id: "desc",
             },
         });
+    }
+    async updateReportConfirm(reportId, data) {
+        const updatedReport = await this.prisma.report.update({
+            where: { id: reportId },
+            data,
+        });
+        return updatedReport;
     }
     async findReportHistoryByUser({ userId, status, }) {
         return this.prisma.report.findMany({
@@ -216,7 +224,10 @@ class ReportService {
             data: { status },
         });
         //*** **** Update user score here **** ****
-        await this.addScoreAndCheckBadge(userId, 1);
+        const userIdReward = report.type == client_1.ReportType.FOUND
+            ? report.userId
+            : report.confirmedByClaimerId;
+        await this.addScoreAndCheckBadge(userIdReward, 1);
         return report;
     }
 }

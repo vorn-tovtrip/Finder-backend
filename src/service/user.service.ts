@@ -1,9 +1,5 @@
 import { PrismaClient } from "@prisma/client";
-import {
-  RegisterPayload,
-  RegisterUserEmail,
-  UpdateUserPayload,
-} from "../types";
+import { RegisterUserEmail, UpdateUserPayload } from "../types";
 
 export class UserService {
   private prismaClient: PrismaClient;
@@ -36,11 +32,9 @@ export class UserService {
   findAll() {
     return this.prismaClient.user.findMany({
       include: {
-        images: {
-          where: {
-            reportId: null,
-          },
+        profileImages: {
           select: {
+            id: true,
             url: true,
           },
         },
@@ -85,19 +79,27 @@ export class UserService {
 
     return user;
   }
+  async findNameById(id: number) {
+    const user = await this.prismaClient.user.findFirst({
+      where: { id },
+      select: {
+        name: true,
+      },
+    });
+
+    return user?.name ?? null;
+  }
+
   async findUserById(id: number) {
     const user = await this.prismaClient.user.findFirst({
       where: {
         id: id,
       },
       include: {
-        images: {
-          where: {
-            reportId: null,
-          },
+        profileImages: {
           select: {
-            url: true,
             id: true,
+            url: true,
           },
         },
       },
@@ -120,9 +122,17 @@ export class UserService {
         ([_, value]) => value !== null && value !== undefined && value !== ""
       )
     );
-
+    delete dataToUpdate.avatar;
     return await this.prismaClient.user.update({
       where: { id },
+      include: {
+        profileImages: {
+          select: {
+            id: true,
+            url: true,
+          },
+        },
+      },
       omit: { password: true },
       data: dataToUpdate,
     });
@@ -149,8 +159,5 @@ export class UserService {
       });
     }
     return { ...user };
-  }
-  registerSocialAuth(params: RegisterPayload) {
-    const user = this.prismaClient.user.findMany({});
   }
 }

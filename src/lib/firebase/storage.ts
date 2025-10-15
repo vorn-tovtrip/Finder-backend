@@ -23,6 +23,7 @@ export class StorageService {
 
   async deleteFile(filePath: string): Promise<void> {
     try {
+      console.log("File path to delete is", filePath);
       const fileRef = bucket!.file(filePath);
       await fileRef.delete();
     } catch (error) {

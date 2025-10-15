@@ -3,7 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.adminAuth = exports.bucket = void 0;
+exports.bucket = void 0;
 const firebase_admin_1 = __importDefault(require("firebase-admin"));
 if (!firebase_admin_1.default.apps.length) {
     firebase_admin_1.default.initializeApp({
@@ -15,7 +15,4 @@ if (!firebase_admin_1.default.apps.length) {
         storageBucket: process.env.FIREBASE_STORAGE_BUCKET,
     });
 }
-exports.bucket = firebase_admin_1.default.apps.length
-    ? firebase_admin_1.default.storage().bucket(process.env.FIREBASE_STORAGE_BUCKET)
-    : null;
-exports.adminAuth = firebase_admin_1.default.auth();
+exports.bucket = firebase_admin_1.default.storage().bucket();

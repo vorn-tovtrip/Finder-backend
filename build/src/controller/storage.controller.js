@@ -34,7 +34,7 @@ class StorageController {
                         name: fileName,
                     };
                     // Use the stream upload method
-                    const fileUrl = await this.storageService.uploadFileStream(fakeFile, "images", fileName);
+                    const fileUrl = await this.storageService.uploadFileStream(fakeFile, "data", fileName);
                     return (0, utils_1.SuccessResponse)({
                         statusCode: 201,
                         data: fileUrl,

@@ -13,6 +13,21 @@ export class UploadService {
       },
     });
   }
+  async createProfileImage(url: string, userId: number) {
+    return await this.prismaClient.userProfileImage.create({
+      data: {
+        url,
+        userId: userId,
+      },
+    });
+  }
+  async deleteProfileImageById(imageId: number) {
+    return await this.prismaClient.userProfileImage.delete({
+      where: {
+        id: imageId,
+      },
+    });
+  }
 
   async findByUrl(url: string) {
     const img = await this.prismaClient.image.findFirst({
@@ -25,6 +40,16 @@ export class UploadService {
   }
   async updateById(id: number, newUrl: string) {
     return await this.prismaClient.image.update({
+      where: {
+        id: id,
+      },
+      data: {
+        url: newUrl,
+      },
+    });
+  }
+  async updateProfileImageById(id: number, newUrl: string) {
+    return await this.prismaClient.userProfileImage.update({
       where: {
         id: id,
       },

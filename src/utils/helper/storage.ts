@@ -18,7 +18,7 @@ export function getContentType(filename: string) {
 }
 
 export function extractFilePathFromUrl(url: string): string {
-  const match = url.match(/\/images\/.+$/);
-  if (!match) throw new Error("Invalid file URL");
-  return match[0].substring(1); // remove leading slash
+  // https://storage.googleapis.com/finder-896b2.firebasestorage.app/images/a414ac95-cfc3-41dd-898d-80914a8e1221-avatar-3d.webp
+  const match = url.match(/firebasestorage\.app\/(.*)$/);
+  return match ? match[1] : "";
 }

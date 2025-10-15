@@ -44,14 +44,22 @@ exports.updateProfileSchema = zod_1.default.object({
     email: zod_1.default
         .string()
         .email({ message: "Must be a valid email address" })
-        .optional(),
+        .optional()
+        .nullable(),
     username: zod_1.default
         .string()
         .min(3, "Username must be at least 3 characters")
+        .nullable()
         .optional(),
-    avatar: zod_1.default.string().url().optional(),
+    avatar: zod_1.default.string().nullable().optional(),
+    password: zod_1.default
+        .string()
+        .min(6, "Password must be at least 6 characters")
+        .nullable()
+        .optional(),
+    address: zod_1.default.string().nullable().optional(),
     phone: zod_1.default
         .string()
         .regex(/^\+?\d{10,15}$/, "Invalid phone number")
-        .optional(),
+        .nullable(),
 });

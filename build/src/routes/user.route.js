@@ -22,14 +22,13 @@ class UserRouter {
             },
             {
                 method: "get",
-                path: "/:userId/report/latest",
-                handler: this.userController.getReportLostLatest.bind(this.userController),
-                middlewares: [middleware_1.authMiddleware],
+                path: "/:id",
+                handler: this.userController.getUserById.bind(this.userController),
             },
             {
-                method: "put",
-                path: "/:id",
-                handler: this.userController.patchUser.bind(this.userController),
+                method: "get",
+                path: "/:userId/report/latest",
+                handler: this.userController.getReportLostLatest.bind(this.userController),
                 middlewares: [middleware_1.authMiddleware],
             },
             {
@@ -82,7 +81,7 @@ class UserRouter {
             {
                 method: "put",
                 path: "/:id",
-                handler: this.userController.patchUser.bind(this.userController),
+                handler: this.userController.updateUser.bind(this.userController),
                 middlewares: [
                     middleware_1.authMiddleware,
                     (0, middleware_1.validateSchemaMiddleware)(schema_1.updateProfileSchema),

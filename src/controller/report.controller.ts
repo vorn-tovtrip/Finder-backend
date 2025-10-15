@@ -1,3 +1,4 @@
+import { ReportType } from "@prisma/client";
 import { NextFunction, Request, Response } from "express";
 import { CreateReportDTO } from "../dto";
 import { PrismaClient } from "../lib";
@@ -8,16 +9,18 @@ import {
   updateStatusReportSchema,
 } from "../schema";
 import { MessageService, ReportService, UserService } from "../service";
+import { NotificationService } from "../service/notification.service";
 import { SuccessResponse } from "../utils";
 export class ReportController {
   private reportService: ReportService;
   private userService: UserService;
   private messageService: MessageService;
-
+  private notificationService: NotificationService;
   constructor() {
     this.reportService = new ReportService(PrismaClient);
     this.userService = new UserService(PrismaClient);
     this.messageService = new MessageService(PrismaClient);
+    this.notificationService = new NotificationService(PrismaClient);
   }
 
   getAllReports = async (req: Request, res: Response) => {
@@ -93,16 +96,52 @@ export class ReportController {
     // ** Send Notification to the owner report that someone has found your
 
     if (parsed.data && parsed.success) {
+      const username = await this.userService.findNameById(parsed.data.userId);
       const report = await this.reportService.updateReportStatus(
         id,
         parsed.data.userId,
         "CHATOWNER"
       );
       const userIdreport = report.userId;
-      console.log(">>> Send notification to ", userIdreport);
-      // Create empty chat (optional: after confirming, notify/report owner)
       const senderId = parsed.data.userId; // user who confirms
       const receiverId = userIdreport; // owner of the report
+      const receiverName = reportExist?.user?.name;
+      const senderName = username;
+
+      // await this.notificationService.create({
+      //   title: "User name",
+      //   body: "Someone wants to chat with you to reunite their lost belonging",
+      //   userId: report.type == ReportType.FOUND ? userIdreport : id, // Create notification to the user report
+      //   description:
+      //     "Someone wants to chat with you to reunite their lost belonging",
+      // });
+
+      //This will send notification to the user or the report user
+      //  title is the sender name
+      await this.notificationService.create({
+        title: senderName ?? "N/A",
+        body: ReportType.FOUND
+          ? "Someone wants to chat with you to reunite their lost belonging"
+          : "You received a request message from finder",
+        userId: receiverId, // Create notification to the user report
+        description: "You received a request message from finder",
+      });
+
+      //  Send to the user it self that click to confirm chat to owner to confirm chat
+      //  This case someone claim that they are the owner so both must confirm
+      //  title is the receiver name
+      await this.notificationService.create({
+        title: receiverName ?? "N/A",
+        body: ReportType.LOST
+          ? "Someone wants to chat with you to reunite their lost belonging"
+          : "You received a request message from finder",
+        userId: senderId,
+        description: "You received a request message from finder",
+      });
+
+      console.log(">>> Send notification to ", userIdreport);
+      // Create empty chat (optional: after confirming, notify/report owner)
+
       await this.createChatBetweenUser(senderId, receiverId);
       return SuccessResponse({ res, data: report, statusCode: 201 });
     }
@@ -114,21 +153,53 @@ export class ReportController {
   ) => {
     const id = Number(req.params.id);
     const parsed = updateStatusReportSchema.safeParse(req.body);
+
     const reportExist = await this.reportService.findReportById(id);
     if (!reportExist) {
-      next("Report does not exist with that id");
+      return next("Report does not exist with that id");
     }
-    // ** User Id here is the one that confirm
-    // ** Send Notification to the user that you success earn a badge
-    if (parsed.data && parsed.success) {
-      const report = await this.reportService.updateReportStatus(
+
+    if (!parsed.success) {
+      return next("Invalid request body");
+    }
+
+    const userId = parsed.data.userId;
+
+    // Determine which user is confirming
+    let dataToUpdate: {
+      confirmedByPosterId?: number;
+      confirmedByClaimerId?: number;
+    } = {};
+    if (userId === reportExist.userId) {
+      dataToUpdate.confirmedByPosterId = reportExist.userId;
+      // The owner report post confirm
+    } else {
+      // assume user B is the claimer they confirm
+      dataToUpdate.confirmedByClaimerId = userId;
+    }
+
+    // Update the confirmation first
+    const updatedReport = await this.reportService.updateReportConfirm(
+      id,
+      dataToUpdate
+    );
+
+    // Check if both confirmed
+    if (
+      updatedReport.confirmedByPosterId &&
+      updatedReport.confirmedByClaimerId
+    ) {
+      // Update status to COMPLETED
+      const completedReport = await this.reportService.updateReportStatus(
         id,
-        parsed.data.userId,
+        userId,
         "COMPLETED"
       );
-
-      return SuccessResponse({ res, data: report, statusCode: 201 });
+      return SuccessResponse({ res, data: completedReport, statusCode: 201 });
     }
+
+    // Otherwise, just return updated confirmations
+    return SuccessResponse({ res, data: updatedReport, statusCode: 200 });
   };
   updateStatusCancel = async (
     req: Request,
@@ -143,6 +214,7 @@ export class ReportController {
     }
 
     // ** Need user id just incase not delete that report
+
     if (parsed.data && parsed.success) {
       const report = await this.reportService.deleteReport(id);
       return SuccessResponse({ res, data: report, statusCode: 201 });

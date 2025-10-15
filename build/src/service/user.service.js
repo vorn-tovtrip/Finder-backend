@@ -22,11 +22,9 @@ class UserService {
     findAll() {
         return this.prismaClient.user.findMany({
             include: {
-                images: {
-                    where: {
-                        reportId: null,
-                    },
+                profileImages: {
                     select: {
+                        id: true,
                         url: true,
                     },
                 },
@@ -68,19 +66,25 @@ class UserService {
         });
         return user;
     }
+    async findNameById(id) {
+        const user = await this.prismaClient.user.findFirst({
+            where: { id },
+            select: {
+                name: true,
+            },
+        });
+        return user?.name ?? null;
+    }
     async findUserById(id) {
         const user = await this.prismaClient.user.findFirst({
             where: {
                 id: id,
             },
             include: {
-                images: {
-                    where: {
-                        reportId: null,
-                    },
+                profileImages: {
                     select: {
-                        url: true,
                         id: true,
+                        url: true,
                     },
                 },
             },
@@ -97,8 +101,17 @@ class UserService {
     async updateUser(id, payload) {
         // Filter out null, undefined, or empty string fields
         const dataToUpdate = Object.fromEntries(Object.entries(payload).filter(([_, value]) => value !== null && value !== undefined && value !== ""));
+        delete dataToUpdate.avatar;
         return await this.prismaClient.user.update({
             where: { id },
+            include: {
+                profileImages: {
+                    select: {
+                        id: true,
+                        url: true,
+                    },
+                },
+            },
             omit: { password: true },
             data: dataToUpdate,
         });
@@ -123,9 +136,6 @@ class UserService {
             });
         }
         return { ...user };
-    }
-    registerSocialAuth(params) {
-        const user = this.prismaClient.user.findMany({});
     }
 }
 exports.UserService = UserService;

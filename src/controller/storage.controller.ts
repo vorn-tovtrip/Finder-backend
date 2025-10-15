@@ -42,7 +42,7 @@ export class StorageController {
         // Use the stream upload method
         const fileUrl = await this.storageService.uploadFileStream(
           fakeFile,
-          "images",
+          "data",
           fileName
         );
 
