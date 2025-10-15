@@ -1,6 +1,7 @@
 import { NextFunction, Request, Response } from "express";
 import { CreateReportDTO } from "../dto";
 import { PrismaClient } from "../lib";
+import { ioInstance, onlineUsers } from "../lib/socket/io";
 import {
   createReportSchema,
   updateReportSchema,
@@ -8,19 +9,15 @@ import {
 } from "../schema";
 import { MessageService, ReportService, UserService } from "../service";
 import { SuccessResponse } from "../utils";
-import { MessageController } from "./message.controller";
-import { ioInstance, onlineUsers } from "../lib/socket/io";
 export class ReportController {
   private reportService: ReportService;
   private userService: UserService;
   private messageService: MessageService;
-  private messageController: MessageController;
 
   constructor() {
     this.reportService = new ReportService(PrismaClient);
     this.userService = new UserService(PrismaClient);
     this.messageService = new MessageService(PrismaClient);
-    this.messageController = new MessageController();
   }
 
   getAllReports = async (req: Request, res: Response) => {
