@@ -11,14 +11,18 @@ import {
 import { MessageService, ReportService, UserService } from "../service";
 import { NotificationService } from "../service/notification.service";
 import { SuccessResponse } from "../utils";
+import { StorageService } from "../lib/firebase/storage";
 export class ReportController {
+  private storageService: StorageService;
+
   private reportService: ReportService;
   private userService: UserService;
   private messageService: MessageService;
   private notificationService: NotificationService;
   constructor() {
+    this.storageService = new StorageService();
     this.reportService = new ReportService(PrismaClient);
-    this.userService = new UserService(PrismaClient);
+    this.userService = new UserService(PrismaClient, this.storageService);
     this.messageService = new MessageService(PrismaClient);
     this.notificationService = new NotificationService(PrismaClient);
   }

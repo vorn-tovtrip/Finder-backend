@@ -1,8 +1,10 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.UserService = void 0;
+const helper_1 = require("../utils/helper");
 class UserService {
-    constructor(prismaClient) {
+    constructor(prismaClient, storageService) {
+        this.storageService = storageService;
         this.prismaClient = prismaClient;
     }
     async findAndUpdateFcmToken({ fcmToken, userId, platform, }) {
@@ -58,10 +60,31 @@ class UserService {
         });
         return userBadges.map((ub) => ub.badge);
     }
+    async findUserWithPasswordExist(email) {
+        const user = await this.prismaClient.user.findFirst({
+            where: {
+                email: email,
+            },
+            include: {
+                profileImages: {
+                    select: { url: true },
+                },
+            },
+        });
+        return user;
+    }
     async findUserExist(email) {
         const user = await this.prismaClient.user.findFirst({
             where: {
                 email: email,
+            },
+            include: {
+                profileImages: {
+                    select: { url: true },
+                },
+            },
+            omit: {
+                password: true,
             },
         });
         return user;
@@ -88,6 +111,7 @@ class UserService {
                     },
                 },
             },
+            omit: { password: true },
         });
         return user;
     }
@@ -117,25 +141,52 @@ class UserService {
         });
     }
     async registerUserEmail(params) {
-        const user = await this.prismaClient.user.create({
-            data: {
+        const user = await this.prismaClient.user.upsert({
+            where: { email: params.email },
+            update: {
+                name: params.username,
+                platform: params.method,
+            },
+            create: {
                 name: params.username,
                 email: params.email,
                 password: params.password,
-                platform: params?.method,
+                platform: params.method,
             },
-        });
-        if (params.avatar) {
-            await this.prismaClient.image.create({
-                data: {
-                    url: params.avatar,
-                    user: {
-                        connect: { id: user.id },
+            include: {
+                profileImages: {
+                    select: {
+                        id: true,
+                        url: true,
                     },
                 },
+            },
+        });
+        // Handle avatar upsert (create or update existing)
+        if (params.avatar) {
+            const existingAvatar = await this.prismaClient.userProfileImage.findFirst({
+                where: { userId: user.id },
             });
+            if (existingAvatar) {
+                const path = (0, helper_1.extractFilePathFromUrl)(existingAvatar?.url);
+                await this.storageService.deleteFile(path);
+                await this.prismaClient.userProfileImage.update({
+                    where: { id: existingAvatar.id },
+                    data: { url: params.avatar },
+                });
+            }
+            else {
+                await this.prismaClient.userProfileImage.create({
+                    data: {
+                        url: params.avatar,
+                        user: { connect: { id: user.id } },
+                    },
+                });
+            }
         }
-        return { ...user };
+        // Return safe user object (omit password manually)
+        const { password, ...safeUser } = user;
+        return safeUser;
     }
 }
 exports.UserService = UserService;

@@ -30,14 +30,14 @@ export class UserController {
   private badgeService: BadgeService;
 
   constructor() {
-    this.userService = new UserService(PrismaClient);
     this.storageService = new StorageService();
+    this.userService = new UserService(PrismaClient, this.storageService);
     this.badgeService = new BadgeService(PrismaClient);
     this.uploadService = new UploadService(PrismaClient);
     this.reportService = new ReportService(PrismaClient);
   }
 
-  getUsers = async (req: Request, res: Response) => {
+  getUsers = async (_: Request, res: Response) => {
     const data = await this.userService.findAll();
     return SuccessResponse({
       res,
@@ -124,7 +124,9 @@ export class UserController {
     if (parsed.success) {
       const data = parsed.data;
 
-      const user = await this.userService.findUserExist(data.email!);
+      const user = await this.userService.findUserWithPasswordExist(
+        data.email!
+      );
       if (!user)
         return ErrorResponse({
           data: null,
@@ -151,12 +153,13 @@ export class UserController {
         userId: user?.id?.toString() ?? "",
         email: user?.email ?? "",
       });
+      const { password, ...safeUser } = user;
 
       return SuccessResponse({
         res,
         data: {
           token,
-          user: { id: user.id, email: user.email, username: user.name },
+          ...safeUser,
         },
         statusCode: 200,
       });
@@ -276,7 +279,6 @@ export class UserController {
       email = generateUniqueEmail();
     }
     let user = await this.userService.findUserExist(email!);
-    const isNewUser = !user;
 
     if (!user) {
       user = await this.userService.registerUserEmail({
@@ -289,8 +291,8 @@ export class UserController {
     }
 
     // Generate JWT
-    const token = signJwt({ userId: user.id, email: user.email });
-    await redisClient.set(`access_token:${user.id}:${token}`, "active", {
+    const token = signJwt({ userId: user!.id, email: user!.email });
+    await redisClient.set(`access_token:${user!.id}:${token}`, "active", {
       EX: TOKEN_EXPIRATION,
     });
 
@@ -299,11 +301,10 @@ export class UserController {
       data: {
         token,
         user: {
-          id: user.id,
-          email: user.email,
-          username: user.name,
+          id: user!.id,
+          email: user!.email,
+          username: user!.name,
           avatar: data?.avatar ?? "",
-          isNewUser,
         },
       },
       statusCode: 200,

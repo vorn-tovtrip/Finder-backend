@@ -8,6 +8,7 @@ const schema_1 = require("../schema");
 const service_1 = require("../service");
 const notification_service_1 = require("../service/notification.service");
 const utils_1 = require("../utils");
+const storage_1 = require("../lib/firebase/storage");
 class ReportController {
     constructor() {
         this.getAllReports = async (req, res) => {
@@ -167,8 +168,9 @@ class ReportController {
                 statusCode: 201,
             });
         };
+        this.storageService = new storage_1.StorageService();
         this.reportService = new service_1.ReportService(lib_1.PrismaClient);
-        this.userService = new service_1.UserService(lib_1.PrismaClient);
+        this.userService = new service_1.UserService(lib_1.PrismaClient, this.storageService);
         this.messageService = new service_1.MessageService(lib_1.PrismaClient);
         this.notificationService = new notification_service_1.NotificationService(lib_1.PrismaClient);
     }

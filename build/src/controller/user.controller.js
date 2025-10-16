@@ -13,7 +13,7 @@ const utils_1 = require("../utils");
 const helper_1 = require("../utils/helper");
 class UserController {
     constructor() {
-        this.getUsers = async (req, res) => {
+        this.getUsers = async (_, res) => {
             const data = await this.userService.findAll();
             return (0, utils_1.SuccessResponse)({
                 res,
@@ -90,7 +90,7 @@ class UserController {
             const parsed = schema_1.loginSchema.safeParse(req.body);
             if (parsed.success) {
                 const data = parsed.data;
-                const user = await this.userService.findUserExist(data.email);
+                const user = await this.userService.findUserWithPasswordExist(data.email);
                 if (!user)
                     return (0, utils_1.ErrorResponse)({
                         data: null,
@@ -112,11 +112,12 @@ class UserController {
                     userId: user?.id?.toString() ?? "",
                     email: user?.email ?? "",
                 });
+                const { password, ...safeUser } = user;
                 return (0, utils_1.SuccessResponse)({
                     res,
                     data: {
                         token,
-                        user: { id: user.id, email: user.email, username: user.name },
+                        ...safeUser,
                     },
                     statusCode: 200,
                 });
@@ -221,7 +222,6 @@ class UserController {
                 email = (0, helper_1.generateUniqueEmail)();
             }
             let user = await this.userService.findUserExist(email);
-            const isNewUser = !user;
             if (!user) {
                 user = await this.userService.registerUserEmail({
                     email: email,
@@ -245,7 +245,6 @@ class UserController {
                         email: user.email,
                         username: user.name,
                         avatar: data?.avatar ?? "",
-                        isNewUser,
                     },
                 },
                 statusCode: 200,
@@ -385,8 +384,8 @@ class UserController {
                 statusCode: 200,
             });
         };
-        this.userService = new service_1.UserService(lib_1.PrismaClient);
         this.storageService = new storage_1.StorageService();
+        this.userService = new service_1.UserService(lib_1.PrismaClient, this.storageService);
         this.badgeService = new badge_service_1.BadgeService(lib_1.PrismaClient);
         this.uploadService = new service_1.UploadService(lib_1.PrismaClient);
         this.reportService = new service_1.ReportService(lib_1.PrismaClient);
