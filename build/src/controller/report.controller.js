@@ -82,7 +82,7 @@ class ReportController {
                 //  title is the sender name
                 await this.notificationService.create({
                     title: senderName ?? "N/A",
-                    body: client_1.ReportType.FOUND
+                    body: reportExist?.type == client_1.ReportType.LOST
                         ? "Someone wants to chat with you to reunite their lost belonging"
                         : "You received a request message from finder",
                     userId: receiverId, // Create notification to the user report
@@ -93,7 +93,7 @@ class ReportController {
                 //  title is the receiver name
                 await this.notificationService.create({
                     title: receiverName ?? "N/A",
-                    body: client_1.ReportType.LOST
+                    body: reportExist?.type == client_1.ReportType.FOUND
                         ? "Someone wants to chat with you to reunite their lost belonging"
                         : "You received a request message from finder",
                     userId: senderId,
@@ -116,16 +116,18 @@ class ReportController {
                 return next("Invalid request body");
             }
             const userId = parsed.data.userId;
+            console.log(reportExist);
             // Determine which user is confirming
             let dataToUpdate = {};
             if (userId === reportExist.userId) {
-                dataToUpdate.confirmedByPosterId = reportExist.userId;
+                dataToUpdate.confirmedByPosterId = userId;
                 // The owner report post confirm
             }
             else {
                 // assume user B is the claimer they confirm
                 dataToUpdate.confirmedByClaimerId = userId;
             }
+            console.log("data to update is", dataToUpdate);
             // Update the confirmation first
             const updatedReport = await this.reportService.updateReportConfirm(id, dataToUpdate);
             // Check if both confirmed
@@ -133,6 +135,7 @@ class ReportController {
                 updatedReport.confirmedByClaimerId) {
                 // Update status to COMPLETED
                 const completedReport = await this.reportService.updateReportStatus(id, userId, "COMPLETED");
+                // const notificationId = this.notificationService.findByReportId();
                 await this.notificationService.updateNotificationReport(id, {
                     status: "COMPLETED",
                 });

@@ -22,7 +22,7 @@ export class ReportService {
       title: payload.title,
       description: payload.description,
       location: payload.location ?? null,
-      timeLostAt: payload.timeLostAt ?? null,
+
       user: {
         connect: { id: payload.userId },
       },
@@ -65,6 +65,7 @@ export class ReportService {
         user: { select: { id: true, name: true, email: true } },
         images: { select: { url: true } },
         category: { select: { id: true, name: true } },
+        Notification: { select: { id: true } },
       },
       orderBy: { createdAt: "desc" },
     });
@@ -77,12 +78,13 @@ export class ReportService {
     userId: number;
     type: ReportType;
   }) {
+    console.log(type);
     return this.prisma.report.findFirst({
       where: {
         userId,
-        AND: {
-          type: type,
-        },
+        // AND: {
+        //   type: type,
+        // },
       },
       omit: {
         categoryId: true,
@@ -155,6 +157,7 @@ export class ReportService {
         user: { select: { id: true, name: true, email: true } },
         images: { select: { url: true } },
         category: { select: { id: true, name: true } },
+        Notification: { select: { id: true } },
       },
     });
   }
@@ -169,7 +172,6 @@ export class ReportService {
     const data: Prisma.ReportUpdateInput = {
       ...(payload.type && { type: payload.type }),
       ...(payload.title && { title: payload.title }),
-      ...(payload.timeLostAt && { timeLostAt: payload.timeLostAt }),
       ...(payload.description && { description: payload.description }),
       ...(payload.location && { location: payload.location }),
       ...(payload.imageUrl && { imageUrl: payload.imageUrl }),
@@ -193,6 +195,7 @@ export class ReportService {
         user: { select: { id: true, name: true, email: true } },
         images: { select: { url: true } },
         category: { select: { id: true, name: true } },
+        Notification: { select: { id: true } },
       },
     });
   }
@@ -211,6 +214,7 @@ export class ReportService {
         user: { select: { id: true, name: true, email: true } },
         images: { select: { url: true } },
         category: { select: { id: true, name: true } },
+        Notification: { select: { id: true } },
       },
     });
   }
@@ -259,13 +263,18 @@ export class ReportService {
 
       data: { status },
     });
-    //*** **** Update user score here **** ****
-    const userIdReward =
-      report.type == ReportType.FOUND
-        ? report.userId
-        : report.confirmedByClaimerId!;
 
-    await this.addScoreAndCheckBadge(userIdReward, 1);
+    console.log(userId);
+    //*** **** Update user score here **** ****
+    if (status != "CHATOWNER") {
+      const userIdReward =
+        report.type == ReportType.FOUND
+          ? report.userId
+          : report.confirmedByClaimerId!;
+
+      await this.addScoreAndCheckBadge(userIdReward, 1);
+    }
+
     return report;
   }
 }

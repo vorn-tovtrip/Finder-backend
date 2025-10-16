@@ -60,17 +60,19 @@ class ReportService {
                 user: { select: { id: true, name: true, email: true } },
                 images: { select: { url: true } },
                 category: { select: { id: true, name: true } },
+                Notification: { select: { id: true } },
             },
             orderBy: { createdAt: "desc" },
         });
     }
     async findLatestReportByUser({ userId, type, }) {
+        console.log(type);
         return this.prisma.report.findFirst({
             where: {
                 userId,
-                AND: {
-                    type: type,
-                },
+                // AND: {
+                //   type: type,
+                // },
             },
             omit: {
                 categoryId: true,
@@ -131,6 +133,7 @@ class ReportService {
                 user: { select: { id: true, name: true, email: true } },
                 images: { select: { url: true } },
                 category: { select: { id: true, name: true } },
+                Notification: { select: { id: true } },
             },
         });
     }
@@ -164,6 +167,7 @@ class ReportService {
                 user: { select: { id: true, name: true, email: true } },
                 images: { select: { url: true } },
                 category: { select: { id: true, name: true } },
+                Notification: { select: { id: true } },
             },
         });
     }
@@ -181,6 +185,7 @@ class ReportService {
                 user: { select: { id: true, name: true, email: true } },
                 images: { select: { url: true } },
                 category: { select: { id: true, name: true } },
+                Notification: { select: { id: true } },
             },
         });
     }

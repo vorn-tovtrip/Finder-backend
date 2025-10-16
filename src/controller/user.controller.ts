@@ -220,7 +220,6 @@ export class UserController {
         if (imageId) {
           //This case we need to delete old image first
           const path = extractFilePathFromUrl(image?.url);
-
           finalAvatar = image?.url;
           imageId = imageId;
           console.log("Path is", path);
@@ -288,8 +287,18 @@ export class UserController {
         password: "social-auth",
         method: data.method,
       });
+      //This case create user account
     }
 
+    if (user.platform == "email") {
+      return ErrorResponse({
+        res,
+        data: null,
+        error: "This user login with email already",
+        statusCode: 401,
+      });
+    }
+    //This case auto login  
     // Generate JWT
     const token = signJwt({ userId: user!.id, email: user!.email });
     await redisClient.set(`access_token:${user!.id}:${token}`, "active", {
@@ -378,11 +387,7 @@ export class UserController {
         res,
         data: {
           token,
-          user: {
-            id: user!.id,
-            email: user!.email,
-            username: user!.name,
-          },
+          ...user,
         },
         statusCode: 200,
       });
@@ -432,7 +437,7 @@ export class UserController {
 
     const data = await this.reportService.findLatestReportByUser({
       userId: id,
-      type: ReportType.LOST,
+      type: ReportType.FOUND,
     });
     return SuccessResponse({
       res,

@@ -352,7 +352,7 @@ class UserController {
             }
             const data = await this.reportService.findLatestReportByUser({
                 userId: id,
-                type: client_1.ReportType.LOST,
+                type: client_1.ReportType.FOUND,
             });
             return (0, utils_1.SuccessResponse)({
                 res,

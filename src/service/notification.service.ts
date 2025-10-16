@@ -24,13 +24,22 @@ export class NotificationService {
       });
     }
   }
+  async findByReportId(reportId: number) {
+    return await this.prisma.notification.findMany({
+      where: {
+        reportId,
+      },
+    });
+  }
   async create(
     data: CreateNotificationDTO,
     reportId: number
   ): Promise<Notification> {
     const notification = await this.prisma.notification.create({
       data: {
-        ...data,
+        description: data.body,
+        title: data.title,
+        isRead: false,
         reportId: reportId,
         userId: data.userId,
         status: "PENDING",
@@ -85,15 +94,9 @@ export class NotificationService {
   }
 
   async updateNotificationReport(id: number, data: UpdateNotificationDTO) {
-    const existingNotification = await this.prisma.notification.findUnique({
-      where: { id },
-    });
-
-    if (!existingNotification) {
-      throw new Error(`Notification with id ${id} not found`);
-    }
-
     // Update the notification
+
+    console.log("Data ism");
     const updatedNotification = await this.prisma.notification.update({
       where: { id },
       data: {

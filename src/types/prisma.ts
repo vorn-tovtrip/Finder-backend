@@ -9,5 +9,6 @@ export type Reports = Prisma.ReportGetPayload<{
     user: { select: { id: true; name: true; email: true } };
     images: { select: { url: true } };
     category: { select: { id: true; name: true } };
+    Notification: { select: { id: true } };
   };
 }>;

@@ -47,6 +47,9 @@ export class UserService {
       omit: {
         password: true,
       },
+      orderBy: {
+        createdAt: "desc",
+      },
     });
   }
   findByNotification(userId: number) {

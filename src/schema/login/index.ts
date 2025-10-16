@@ -30,7 +30,7 @@ export const socialAuthSchema = z.object({
   method: z.nativeEnum(LoginMethod, {
     errorMap: () => ({ message: "Invalid login method" }),
   }),
-  socialToken: z.string(),
+  socialToken: z.string().min(1, "Social token is required"),
   phone: z
     .string()
     .regex(/^\+?\d{10,15}$/, "Invalid phone number")

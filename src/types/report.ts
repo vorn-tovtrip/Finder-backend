@@ -11,7 +11,7 @@ export type CreateReportPayload = {
   contactnumber: string;
   rewardBadgeId?: number;
   categoryId?: number;
-  timeLostAt: Date;
+  timeLostAt?: Date;
 };
 
 export type UpdateReportPayload = Partial<CreateReportPayload>;

@@ -122,13 +122,18 @@ export class ReportController {
 
       //This will send notification to the user or the report user
       //  title is the sender name
+
+      console.log("Sender name is", senderName, senderId);
+      console.log("receiver name is", receiverName, receiverId);
+
       await this.notificationService.create(
         {
           title: senderName ?? "N/A",
 
-          body: ReportType.FOUND
-            ? "Someone wants to chat with you to reunite their lost belonging"
-            : "You received a request message from finder",
+          body:
+            reportExist?.type == ReportType.FOUND
+              ? "Someone wants to chat with you to reunite their lost belonging"
+              : "You received a request message from finder",
           userId: receiverId, // Create notification to the user report
           description: "You received a request message from finder",
         },
@@ -141,9 +146,10 @@ export class ReportController {
       await this.notificationService.create(
         {
           title: receiverName ?? "N/A",
-          body: ReportType.LOST
-            ? "Someone wants to chat with you to reunite their lost belonging"
-            : "You received a request message from finder",
+          body:
+            reportExist?.type == ReportType.LOST
+              ? "You received a request message from finder"
+              : "You received a request message from finder",
           userId: senderId,
           description: "You received a request message from finder",
         },
@@ -162,60 +168,119 @@ export class ReportController {
     res: Response,
     next: NextFunction
   ) => {
-    const id = Number(req.params.id);
-    const parsed = updateStatusReportSchema.safeParse(req.body);
+    try {
+      const id = Number(req.params.id);
+      const parsed = updateStatusReportSchema.safeParse(req.body);
 
-    const reportExist = await this.reportService.findReportById(id);
-    if (!reportExist) {
-      return next("Report does not exist with that id");
-    }
+      // Validate report existence
+      const reportExist = await this.reportService.findReportById(id);
+      if (!reportExist) {
+        return next("Report does not exist with that id");
+      }
 
-    if (!parsed.success) {
-      return next("Invalid request body");
-    }
+      // Validate request body
+      if (!parsed.success) {
+        return next("Invalid request body");
+      }
 
-    const userId = parsed.data.userId;
+      const userId = parsed.data.userId;
 
-    // Determine which user is confirming
-    let dataToUpdate: {
-      confirmedByPosterId?: number;
-      confirmedByClaimerId?: number;
-    } = {};
-    if (userId === reportExist.userId) {
-      dataToUpdate.confirmedByPosterId = reportExist.userId;
-      // The owner report post confirm
-    } else {
-      // assume user B is the claimer they confirm
-      dataToUpdate.confirmedByClaimerId = userId;
-    }
+      // Determine which user is confirming
+      const dataToUpdate: {
+        confirmedByPosterId?: number;
+        confirmedByClaimerId?: number;
+      } = {};
 
-    // Update the confirmation first
-    const updatedReport = await this.reportService.updateReportConfirm(
-      id,
-      dataToUpdate
-    );
+      if (userId === reportExist.userId) {
+        // Poster confirms
+        dataToUpdate.confirmedByPosterId = userId;
+      } else {
+        // Claimer confirms
+        dataToUpdate.confirmedByClaimerId = userId;
+      }
 
-    // Check if both confirmed
-    if (
-      updatedReport.confirmedByPosterId &&
-      updatedReport.confirmedByClaimerId
-    ) {
-      // Update status to COMPLETED
-      const completedReport = await this.reportService.updateReportStatus(
+      console.log("Data to update is", dataToUpdate);
+
+      // Update confirmation fields
+      const updatedReport = await this.reportService.updateReportConfirm(
         id,
-        userId,
-        "COMPLETED"
+        dataToUpdate
       );
-      await this.notificationService.updateNotificationReport(id, {
-        status: "COMPLETED",
-      });
-      // await this.notificationService.updateNotification()
-      return SuccessResponse({ res, data: completedReport, statusCode: 201 });
-    }
 
-    // Otherwise, just return updated confirmations
-    return SuccessResponse({ res, data: updatedReport, statusCode: 200 });
+      // If both confirmed → mark report and notifications as COMPLETED
+      if (
+        updatedReport.confirmedByPosterId &&
+        updatedReport.confirmedByClaimerId
+      ) {
+        // Update report status
+        const completedReport = await this.reportService.updateReportStatus(
+          id,
+          userId,
+          "COMPLETED"
+        );
+
+        // Get all related notifications
+        const notifications = await this.notificationService.findByReportId(
+          reportExist.id
+        );
+
+        if (notifications?.length) {
+          // Find each user’s corresponding notification
+          const posterNotification = notifications.find(
+            (n) => n.userId === updatedReport.confirmedByPosterId
+          );
+          const claimerNotification = notifications.find(
+            (n) => n.userId === updatedReport.confirmedByClaimerId
+          );
+
+          const updates = [];
+
+          if (claimerNotification) {
+            updates.push(
+              this.notificationService.updateNotificationReport(
+                claimerNotification.id,
+                {
+                  status: "COMPLETED",
+                  userId: updatedReport.confirmedByClaimerId,
+                }
+              )
+            );
+          }
+
+          if (posterNotification) {
+            updates.push(
+              this.notificationService.updateNotificationReport(
+                posterNotification.id,
+                {
+                  status: "COMPLETED",
+                  userId: updatedReport.confirmedByPosterId,
+                }
+              )
+            );
+          }
+
+          await Promise.all(updates);
+        }
+
+        // Return completed report
+        return SuccessResponse({
+          res,
+          data: completedReport,
+          statusCode: 201,
+        });
+      }
+
+      return SuccessResponse({
+        res,
+        data: updatedReport,
+        statusCode: 200,
+      });
+    } catch (error) {
+      console.error("Error in updateStatusConfirm:", error);
+      return next(error);
+    }
   };
+
   updateStatusCancel = async (
     req: Request,
     res: Response,

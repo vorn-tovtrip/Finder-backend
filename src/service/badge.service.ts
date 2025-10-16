@@ -9,6 +9,9 @@ export class BadgeService {
       omit: {
         description: true,
       },
+      orderBy: {
+        requiredScore: "asc",
+      },
     });
   }
 

@@ -26,9 +26,15 @@ class NotificationService {
         }
     }
     async create(data, reportId) {
+        // Clean data: remove null, undefined, or empty string values
+        const cleanedData = Object.fromEntries(Object.entries(data).filter(([, value]) => value !== null &&
+            value !== undefined &&
+            !(typeof value === "string" && value.trim() === "")));
         const notification = await this.prisma.notification.create({
             data: {
-                ...data,
+                description: data.body,
+                title: data.title,
+                isRead: false,
                 reportId: reportId,
                 userId: data.userId,
                 status: "PENDING",

@@ -39,12 +39,12 @@ model Notification {
   id          Int                @id @default(autoincrement())
   title       String
   description String
-  user        User               @relation(fields: [userId], references: [id])
+  user        User               @relation(fields: [userId], references: [id], onDelete: Cascade)
   userId      Int
   isRead      Boolean            @default(false)
   createdAt   DateTime           @default(now())
   status      NotificationStatus @default(PENDING)
-  report      Report             @relation(fields: [reportId], references: [id])
+  report      Report             @relation(fields: [reportId], references: [id], onDelete: Cascade)
   reportId    Int
 }
 
@@ -64,7 +64,6 @@ model User {
   profileImages    UserProfileImage[]
   password         String?
   reports          Report[]           @relation("UserReports")
-  claims           Claim[]            @relation("UserClaims")
   userBadges       UserBadge[]
   createdAt        DateTime           @default(now())
   DeviceToken      DeviceToken[]
@@ -124,8 +123,6 @@ model Report {
   status        ReportStatus    @default(PENDING)
   user          User            @relation("UserReports", fields: [userId], references: [id])
   userId        Int
-  claims        Claim[]
-  histories     StatusHistory[]
   rewardBadge   Badge?          @relation(fields: [rewardBadgeId], references: [id])
   rewardBadgeId Int?
   createdAt     DateTime        @default(now())
@@ -140,27 +137,6 @@ model Report {
   confirmedByPosterId  Int? // null = not confirmed, otherwise user ID of poster
   confirmedByClaimerId Int? // null = not confirmed, otherwise user ID of claimer
   Notification         Notification[]
-}
-
-model Claim {
-  id        Int      @id @default(autoincrement())
-  report    Report   @relation(fields: [reportId], references: [id])
-  reportId  Int
-  claimer   User     @relation("UserClaims", fields: [claimerId], references: [id])
-  claimerId Int
-  message   String?
-  status    String   @default("pending") // approved | rejected
-  createdAt DateTime @default(now())
-}
-
-model StatusHistory {
-  id        Int           @id @default(autoincrement())
-  report    Report        @relation(fields: [reportId], references: [id])
-  reportId  Int
-  oldStatus ReportStatus?
-  newStatus ReportStatus
-  note      String?
-  createdAt DateTime      @default(now())
 }
 
 model Badge {
