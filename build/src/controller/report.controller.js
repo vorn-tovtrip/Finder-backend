@@ -86,7 +86,7 @@ class ReportController {
                         : "You received a request message from finder",
                     userId: receiverId, // Create notification to the user report
                     description: "You received a request message from finder",
-                });
+                }, reportExist.id);
                 //  Send to the user it self that click to confirm chat to owner to confirm chat
                 //  This case someone claim that they are the owner so both must confirm
                 //  title is the receiver name
@@ -97,7 +97,7 @@ class ReportController {
                         : "You received a request message from finder",
                     userId: senderId,
                     description: "You received a request message from finder",
-                });
+                }, reportExist.id);
                 console.log(">>> Send notification to ", userIdreport);
                 // Create empty chat (optional: after confirming, notify/report owner)
                 await this.createChatBetweenUser(senderId, receiverId);
@@ -132,6 +132,10 @@ class ReportController {
                 updatedReport.confirmedByClaimerId) {
                 // Update status to COMPLETED
                 const completedReport = await this.reportService.updateReportStatus(id, userId, "COMPLETED");
+                await this.notificationService.updateNotificationReport(id, {
+                    status: "COMPLETED",
+                });
+                // await this.notificationService.updateNotification()
                 return (0, utils_1.SuccessResponse)({ res, data: completedReport, statusCode: 201 });
             }
             // Otherwise, just return updated confirmations

@@ -18,6 +18,11 @@ enum ReportType {
   FOUND
 }
 
+enum NotificationStatus {
+  PENDING
+  COMPLETED
+}
+
 enum ReportStatus {
   PENDING
   CHATOWNER
@@ -31,13 +36,16 @@ enum LoginMethod {
 }
 
 model Notification {
-  id          Int      @id @default(autoincrement())
+  id          Int                @id @default(autoincrement())
   title       String
   description String
-  user        User     @relation(fields: [userId], references: [id])
+  user        User               @relation(fields: [userId], references: [id])
   userId      Int
-  isRead      Boolean  @default(false)
-  createdAt   DateTime @default(now())
+  isRead      Boolean            @default(false)
+  createdAt   DateTime           @default(now())
+  status      NotificationStatus @default(PENDING)
+  report      Report             @relation(fields: [reportId], references: [id])
+  reportId    Int
 }
 
 model UserProfileImage {
@@ -131,6 +139,7 @@ model Report {
 
   confirmedByPosterId  Int? // null = not confirmed, otherwise user ID of poster
   confirmedByClaimerId Int? // null = not confirmed, otherwise user ID of claimer
+  Notification         Notification[]
 }
 
 model Claim {

@@ -118,26 +118,33 @@ export class ReportController {
 
       //This will send notification to the user or the report user
       //  title is the sender name
-      await this.notificationService.create({
-        title: senderName ?? "N/A",
-        body: ReportType.FOUND
-          ? "Someone wants to chat with you to reunite their lost belonging"
-          : "You received a request message from finder",
-        userId: receiverId, // Create notification to the user report
-        description: "You received a request message from finder",
-      });
+      await this.notificationService.create(
+        {
+          title: senderName ?? "N/A",
+
+          body: ReportType.FOUND
+            ? "Someone wants to chat with you to reunite their lost belonging"
+            : "You received a request message from finder",
+          userId: receiverId, // Create notification to the user report
+          description: "You received a request message from finder",
+        },
+        reportExist!.id!
+      );
 
       //  Send to the user it self that click to confirm chat to owner to confirm chat
       //  This case someone claim that they are the owner so both must confirm
       //  title is the receiver name
-      await this.notificationService.create({
-        title: receiverName ?? "N/A",
-        body: ReportType.LOST
-          ? "Someone wants to chat with you to reunite their lost belonging"
-          : "You received a request message from finder",
-        userId: senderId,
-        description: "You received a request message from finder",
-      });
+      await this.notificationService.create(
+        {
+          title: receiverName ?? "N/A",
+          body: ReportType.LOST
+            ? "Someone wants to chat with you to reunite their lost belonging"
+            : "You received a request message from finder",
+          userId: senderId,
+          description: "You received a request message from finder",
+        },
+        reportExist!.id!
+      );
 
       console.log(">>> Send notification to ", userIdreport);
       // Create empty chat (optional: after confirming, notify/report owner)
@@ -195,6 +202,10 @@ export class ReportController {
         userId,
         "COMPLETED"
       );
+      await this.notificationService.updateNotificationReport(id, {
+        status: "COMPLETED",
+      });
+      // await this.notificationService.updateNotification()
       return SuccessResponse({ res, data: completedReport, statusCode: 201 });
     }
 

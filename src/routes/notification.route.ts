@@ -3,8 +3,9 @@ import { NotificationController } from "../controller/notification.controller";
 import { authMiddleware, validateSchemaMiddleware } from "../middleware";
 import {
   createNotificationSchema,
-  updateNotificationSchema,
+  testCreateNotificationSchema,
 } from "../schema/notification";
+import { RouteDefinition } from "../types/route";
 
 export class NotificationRouter {
   private readonly router: Router;
@@ -17,25 +18,64 @@ export class NotificationRouter {
   }
 
   private initializeRoutes() {
-    this.router.get("/", authMiddleware, this.controller.getAll);
-    this.router.get("/:id", authMiddleware, this.controller.getById);
-    this.router.get("/user/:userId", authMiddleware, this.controller.getByUser);
+    const routes: RouteDefinition[] = [
+      {
+        method: "get",
+        path: "/",
+        handler: this.controller.getAll.bind(this.controller),
+        middlewares: [authMiddleware],
+      },
+      {
+        method: "post",
+        path: "/test",
+        handler: this.controller.sendTestUser.bind(this.controller),
+        middlewares: [
+          authMiddleware,
+          validateSchemaMiddleware(testCreateNotificationSchema),
+        ],
+      },
+      {
+        method: "get",
+        path: "/:id",
+        handler: this.controller.getById.bind(this.controller),
+        middlewares: [authMiddleware],
+      },
+      {
+        method: "get",
+        path: "/user/:userId",
+        handler: this.controller.getByUser.bind(this.controller),
+        middlewares: [authMiddleware],
+      },
 
-    this.router.post(
-      "/",
-      authMiddleware,
-      validateSchemaMiddleware(createNotificationSchema),
-      this.controller.create
-    );
+      {
+        method: "post",
+        path: "/",
+        handler: this.controller.create.bind(this.controller),
+        middlewares: [
+          authMiddleware,
+          validateSchemaMiddleware(createNotificationSchema),
+        ],
+      },
+      {
+        method: "delete",
+        path: "/:id",
+        handler: this.controller.delete.bind(this.controller),
+        middlewares: [authMiddleware],
+      },
+    ];
 
-    this.router.put(
-      "/:id",
-      authMiddleware,
-      validateSchemaMiddleware(updateNotificationSchema),
-      this.controller.update
-    );
-
-    this.router.delete("/:id", authMiddleware, this.controller.delete);
+    // Register all routes dynamically
+    routes.forEach((route) => {
+      if (route.middlewares && route.middlewares.length > 0) {
+        this.router[route.method](
+          route.path,
+          ...route.middlewares,
+          route.handler
+        );
+      } else {
+        this.router[route.method](route.path, route.handler);
+      }
+    });
   }
 
   public initRoutes(): Router {

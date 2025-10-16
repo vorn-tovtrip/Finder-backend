@@ -1,8 +1,13 @@
 import { Request, Response } from "express";
+import { CreateNotificationDTO } from "../dto/notification.dto";
 import { PrismaClient } from "../lib";
+import {
+  createNotificationSchema,
+  testCreateNotificationSchema,
+} from "../schema/notification";
 import { NotificationService } from "../service/notification.service";
 import { ErrorResponse, SuccessResponse } from "../utils";
-import { CreateNotificationDTO } from "../dto/notification.dto";
+import { validateSchemaMiddleware } from "../middleware";
 
 export class NotificationController {
   private readonly notificationService: NotificationService;
@@ -30,14 +35,36 @@ export class NotificationController {
     return SuccessResponse({ res, data: notifications, statusCode: 200 });
   };
 
+  sendTestUser = async (req: Request<{ userId: string }>, res: Response) => {
+    const parse = testCreateNotificationSchema.safeParse(req.body);
+
+    console.log("Run");
+
+    if (parse.data) {
+      // Here send notificaiton to user
+    }
+
+    return SuccessResponse({ res, data: parse.data, statusCode: 200 });
+  };
+
   create = async (req: Request, res: Response<CreateNotificationDTO>) => {
     try {
-      const notification = await this.notificationService.create(req.body);
-      return SuccessResponse({
-        res,
-        data: notification,
-        statusCode: 201,
-      });
+      const parseData = await createNotificationSchema.safeParse(req.body);
+      if (parseData.data) {
+        const notification = await this.notificationService.create(
+          {
+            ...parseData.data,
+            status: "PENDING",
+            userId: parseData.data.userId,
+          },
+          parseInt(parseData.data.reportId!)
+        );
+        return SuccessResponse({
+          res,
+          data: notification,
+          statusCode: 201,
+        });
+      }
     } catch (error) {
       return ErrorResponse({
         res,
@@ -46,12 +73,6 @@ export class NotificationController {
         error: error instanceof Error ? error.message : "Internal server error",
       });
     }
-  };
-
-  update = async (req: Request<{ id: string }>, res: Response) => {
-    const id = parseInt(req.params.id);
-    const updated = await this.notificationService.update(id, req.body);
-    return SuccessResponse({ res, data: updated, statusCode: 200 });
   };
 
   delete = async (req: Request<{ id: string }>, res: Response) => {

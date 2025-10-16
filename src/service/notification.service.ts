@@ -1,4 +1,4 @@
-import { Notification, PrismaClient } from "@prisma/client";
+import { Notification, NotificationStatus, PrismaClient } from "@prisma/client";
 import admin from "firebase-admin";
 import { BatchResponse } from "firebase-admin/lib/messaging/messaging-api";
 import {
@@ -12,7 +12,6 @@ export class NotificationService {
     payload: { title: string; body: string }
   ): Promise<string | BatchResponse> {
     if (tokens.length === 0) return Promise.resolve(""); //Case no FCM token register
-
     if (tokens.length === 1) {
       return admin.messaging().send({
         token: tokens[0],
@@ -25,9 +24,18 @@ export class NotificationService {
       });
     }
   }
-  async create(data: CreateNotificationDTO): Promise<Notification> {
-    const notification = await this.prisma.notification.create({ data });
-
+  async create(
+    data: CreateNotificationDTO,
+    reportId: number
+  ): Promise<Notification> {
+    const notification = await this.prisma.notification.create({
+      data: {
+        ...data,
+        reportId: reportId,
+        userId: data.userId,
+        status: "PENDING",
+      },
+    });
     const tokens = await this.prisma.deviceToken.findMany({
       where: { userId: data.userId },
       select: { token: true },
@@ -76,6 +84,31 @@ export class NotificationService {
     });
   }
 
+  async updateNotificationReport(id: number, data: UpdateNotificationDTO) {
+    const existingNotification = await this.prisma.notification.findUnique({
+      where: { id },
+    });
+
+    if (!existingNotification) {
+      throw new Error(`Notification with id ${id} not found`);
+    }
+
+    // Update the notification
+    const updatedNotification = await this.prisma.notification.update({
+      where: { id },
+      data: {
+        status: data.status as NotificationStatus,
+        user: {
+          connect: {
+            id: data.userId,
+          },
+        },
+      },
+    });
+
+    return updatedNotification;
+  }
+
   async findById(id: number): Promise<Notification | null> {
     return this.prisma.notification.findUnique({ where: { id } });
   }
@@ -87,12 +120,12 @@ export class NotificationService {
     });
   }
 
-  async update(id: number, data: UpdateNotificationDTO): Promise<Notification> {
-    return this.prisma.notification.update({
-      where: { id },
-      data,
-    });
-  }
+  // async update(id: number, data: UpdateNotificationDTO): Promise<Notification> {
+  //   return this.prisma.notification.update({
+  //     where: { id },
+  //     data,
+  //   });
+  // }
 
   async delete(id: number): Promise<Notification> {
     return this.prisma.notification.delete({ where: { id } });
