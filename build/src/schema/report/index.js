@@ -13,16 +13,6 @@ exports.createReportSchema = zod_1.z.object({
     imageUrl: zod_1.z.string().url().optional(),
     userId: zod_1.z.number({ invalid_type_error: "userId must be a number" }),
     categoryId: zod_1.z.number().optional(),
-    timeLostAt: zod_1.z.preprocess((val) => {
-        if (typeof val === "string" || typeof val === "number") {
-            const date = new Date(val);
-            return isNaN(date.getTime()) ? undefined : date;
-        }
-        return val;
-    }, zod_1.z.date({
-        required_error: "timeLostAt is required",
-        invalid_type_error: "Invalid date/time provided",
-    })),
     rewardBadgeId: zod_1.z.number().optional(),
     contactnumber: zod_1.z
         .string()

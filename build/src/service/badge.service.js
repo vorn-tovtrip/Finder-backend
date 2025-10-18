@@ -10,6 +10,9 @@ class BadgeService {
             omit: {
                 description: true,
             },
+            orderBy: {
+                requiredScore: "asc",
+            },
         });
     }
     async findBadgeById(id) {

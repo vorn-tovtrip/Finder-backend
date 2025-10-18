@@ -4,18 +4,6 @@ exports.setupChatSocket = exports.onlineUsers = exports.ioInstance = void 0;
 const message_controller_1 = require("../../controller/message.controller");
 exports.onlineUsers = {};
 const setupChatSocket = (io) => {
-    /*  Pattern
-    onlineUsers= {
-    userId:socketId,
-    userIdB:sockerIdB
-    }
-  
-    onlineUsers = {
-    7: asdas-342sads-e,
-    8:be88asdd-asdsdd0
-    }
-  
-    */
     exports.ioInstance = io; // save io instance globally
     const messageController = new message_controller_1.MessageController();
     io.on("connection", (socket) => {
@@ -26,13 +14,6 @@ const setupChatSocket = (io) => {
             //This everyone gonna emit join socket id is a unique id for each device
             console.log("Online users:", exports.onlineUsers);
         });
-        // Send message
-        // socket.on(
-        //   "sendMessage",
-        //   (data: { senderId: number; receiverId: number; content: string }) => {
-        //     messageController.handleSendMessage(socket, onlineUsers, data);
-        //   }
-        // );
         // Send message
         socket.on("sendMessage", async (data) => {
             const { senderId, receiverId } = data;
@@ -57,6 +38,3 @@ const setupChatSocket = (io) => {
     });
 };
 exports.setupChatSocket = setupChatSocket;
-// socket.on("updateLastMessage", (message) => {
-//   // update your chat list state
-// });

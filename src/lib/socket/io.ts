@@ -3,19 +3,6 @@ import { MessageController } from "../../controller/message.controller";
 export let ioInstance: Server;
 export const onlineUsers: Record<string, string> = {};
 export const setupChatSocket = (io: Server) => {
-  /*  Pattern  
-  onlineUsers= {
-  userId:socketId,
-  userIdB:sockerIdB
-  }
-
-  onlineUsers = {
-  7: asdas-342sads-e,
-  8:be88asdd-asdsdd0
-  }
-
-  */
-
   ioInstance = io; // save io instance globally
   const messageController = new MessageController();
   io.on("connection", (socket: Socket) => {
@@ -26,14 +13,6 @@ export const setupChatSocket = (io: Server) => {
       //This everyone gonna emit join socket id is a unique id for each device
       console.log("Online users:", onlineUsers);
     });
-
-    // Send message
-    // socket.on(
-    //   "sendMessage",
-    //   (data: { senderId: number; receiverId: number; content: string }) => {
-    //     messageController.handleSendMessage(socket, onlineUsers, data);
-    //   }
-    // );
 
     // Send message
     socket.on(
@@ -70,7 +49,3 @@ export const setupChatSocket = (io: Server) => {
     });
   });
 };
-
-// socket.on("updateLastMessage", (message) => {
-//   // update your chat list state
-// });

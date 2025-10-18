@@ -25,11 +25,14 @@ class NotificationService {
             });
         }
     }
+    async findByReportId(reportId) {
+        return await this.prisma.notification.findMany({
+            where: {
+                reportId,
+            },
+        });
+    }
     async create(data, reportId) {
-        // Clean data: remove null, undefined, or empty string values
-        const cleanedData = Object.fromEntries(Object.entries(data).filter(([, value]) => value !== null &&
-            value !== undefined &&
-            !(typeof value === "string" && value.trim() === "")));
         const notification = await this.prisma.notification.create({
             data: {
                 description: data.body,
@@ -80,13 +83,8 @@ class NotificationService {
         });
     }
     async updateNotificationReport(id, data) {
-        const existingNotification = await this.prisma.notification.findUnique({
-            where: { id },
-        });
-        if (!existingNotification) {
-            throw new Error(`Notification with id ${id} not found`);
-        }
         // Update the notification
+        console.log("Data ism");
         const updatedNotification = await this.prisma.notification.update({
             where: { id },
             data: {

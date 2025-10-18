@@ -93,8 +93,6 @@ export class ReportService {
       include: {
         rewardBadge: true,
         category: true,
-        claims: true,
-        histories: true,
         userBadge: true,
       },
       orderBy: {
@@ -133,8 +131,6 @@ export class ReportService {
       include: {
         rewardBadge: true,
         category: true,
-        claims: true,
-        histories: true,
         userBadge: true,
       },
       orderBy: {

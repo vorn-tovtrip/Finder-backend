@@ -230,7 +230,17 @@ class UserController {
                     password: "social-auth",
                     method: data.method,
                 });
+                //This case create user account
             }
+            if (user.platform == "email") {
+                return (0, utils_1.ErrorResponse)({
+                    res,
+                    data: null,
+                    error: "This user login with email already",
+                    statusCode: 401,
+                });
+            }
+            //This case auto login  
             // Generate JWT
             const token = (0, utils_1.signJwt)({ userId: user.id, email: user.email });
             await redisClient.set(`access_token:${user.id}:${token}`, "active", {
@@ -305,11 +315,7 @@ class UserController {
                     res,
                     data: {
                         token,
-                        user: {
-                            id: user.id,
-                            email: user.email,
-                            username: user.name,
-                        },
+                        ...user,
                     },
                     statusCode: 200,
                 });

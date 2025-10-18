@@ -22,7 +22,6 @@ class ReportService {
             title: payload.title,
             description: payload.description,
             location: payload.location ?? null,
-            timeLostAt: payload.timeLostAt ?? null,
             user: {
                 connect: { id: payload.userId },
             },
@@ -81,8 +80,6 @@ class ReportService {
             include: {
                 rewardBadge: true,
                 category: true,
-                claims: true,
-                histories: true,
                 userBadge: true,
             },
             orderBy: {
@@ -110,8 +107,6 @@ class ReportService {
             include: {
                 rewardBadge: true,
                 category: true,
-                claims: true,
-                histories: true,
                 userBadge: true,
             },
             orderBy: {
@@ -144,7 +139,6 @@ class ReportService {
         const data = {
             ...(payload.type && { type: payload.type }),
             ...(payload.title && { title: payload.title }),
-            ...(payload.timeLostAt && { timeLostAt: payload.timeLostAt }),
             ...(payload.description && { description: payload.description }),
             ...(payload.location && { location: payload.location }),
             ...(payload.imageUrl && { imageUrl: payload.imageUrl }),
@@ -228,11 +222,14 @@ class ReportService {
             },
             data: { status },
         });
+        console.log(userId);
         //*** **** Update user score here **** ****
-        const userIdReward = report.type == client_1.ReportType.FOUND
-            ? report.userId
-            : report.confirmedByClaimerId;
-        await this.addScoreAndCheckBadge(userIdReward, 1);
+        if (status != "CHATOWNER") {
+            const userIdReward = report.type == client_1.ReportType.FOUND
+                ? report.userId
+                : report.confirmedByClaimerId;
+            await this.addScoreAndCheckBadge(userIdReward, 1);
+        }
         return report;
     }
 }

@@ -34,7 +34,7 @@ exports.socialAuthSchema = zod_1.default.object({
     method: zod_1.default.nativeEnum(types_1.LoginMethod, {
         errorMap: () => ({ message: "Invalid login method" }),
     }),
-    socialToken: zod_1.default.string(),
+    socialToken: zod_1.default.string().min(1, "Social token is required"),
     phone: zod_1.default
         .string()
         .regex(/^\+?\d{10,15}$/, "Invalid phone number")
