@@ -22,25 +22,47 @@ export class MessageService {
     await this.prismaClient.message.deleteMany({});
   }
   async getConversations(userId: number) {
-    // Group messages by the other user and get the last message
     const messages = await this.prismaClient.message.findMany({
       where: {
         OR: [{ senderId: userId }, { receiverId: userId }],
       },
-      omit: {
-        userId: true,
+      include: {
+        sender: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            profileImages: {
+              select: { url: true },
+            },
+          },
+        },
+        receiver: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            profileImages: {
+              select: { url: true },
+            },
+          },
+        },
       },
-      orderBy: { createdAt: "desc" },
+      orderBy: { createdAt: "asc" },
     });
 
     const convMap: Record<number, any> = {};
 
     messages.forEach((msg) => {
-      const otherUserId =
-        msg.senderId === userId ? msg.receiverId : msg.senderId;
-      if (!convMap[otherUserId]) {
-        convMap[otherUserId] = {
-          userId: otherUserId,
+      const isSender = msg.senderId === userId;
+      const otherUser = isSender ? msg.receiver : msg.sender;
+
+      if (!convMap[otherUser.id]) {
+        convMap[otherUser.id] = {
+          userId: otherUser.id,
+          name: otherUser.name,
+          email: otherUser.email,
+          profileImage: otherUser.profileImages?.[0]?.url || null,
           lastMessage: msg.content,
           lastUpdatedAt: msg.createdAt,
         };
@@ -73,6 +95,14 @@ export class MessageService {
         ],
       },
       orderBy: { createdAt: "asc" },
+      include: {
+        receiver: {
+          omit: { password: true },
+        },
+        sender: {
+          omit: { password: true },
+        },
+      },
     });
   }
 }

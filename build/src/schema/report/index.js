@@ -8,7 +8,7 @@ exports.createReportSchema = zod_1.z.object({
         errorMap: () => ({ message: "Invalid report status" }),
     }),
     title: zod_1.z.string().min(1, "Title is required"),
-    description: zod_1.z.string().min(1, "Description is required"),
+    description: zod_1.z.string().optional().default("this is a report description"),
     location: zod_1.z.string().optional(),
     imageUrl: zod_1.z.string().url().optional(),
     userId: zod_1.z.number({ invalid_type_error: "userId must be a number" }),
@@ -16,8 +16,7 @@ exports.createReportSchema = zod_1.z.object({
     rewardBadgeId: zod_1.z.number().optional(),
     contactnumber: zod_1.z
         .string()
-        .regex(/^(\+855)?0?\d{8,9}$/, "Invalid phone number")
-        .optional(),
+        .regex(/^(\+855)?0?\d{8,9}$/, "Invalid phone number"),
 });
 exports.updateReportSchema = exports.createReportSchema.partial();
 exports.updateStatusReportSchema = zod_1.z.object({

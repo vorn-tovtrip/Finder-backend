@@ -6,7 +6,7 @@ export const createReportSchema = z.object({
     errorMap: () => ({ message: "Invalid report status" }),
   }),
   title: z.string().min(1, "Title is required"),
-  description: z.string().min(1, "Description is required"),
+  description: z.string().optional().default("this is a report description"),
   location: z.string().optional(),
   imageUrl: z.string().url().optional(),
   userId: z.number({ invalid_type_error: "userId must be a number" }),
@@ -14,8 +14,7 @@ export const createReportSchema = z.object({
   rewardBadgeId: z.number().optional(),
   contactnumber: z
     .string()
-    .regex(/^(\+855)?0?\d{8,9}$/, "Invalid phone number")
-    .optional(),
+    .regex(/^(\+855)?0?\d{8,9}$/, "Invalid phone number"),
 });
 
 export const updateReportSchema = createReportSchema.partial();

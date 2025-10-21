@@ -84,7 +84,6 @@ class NotificationService {
     }
     async updateNotificationReport(id, data) {
         // Update the notification
-        console.log("Data ism");
         const updatedNotification = await this.prisma.notification.update({
             where: { id },
             data: {
@@ -105,6 +104,13 @@ class NotificationService {
         return this.prisma.notification.findMany({
             where: { userId },
             orderBy: { createdAt: "desc" },
+            include: {
+                user: {
+                    omit: {
+                        password: true,
+                    },
+                },
+            },
         });
     }
     // async update(id: number, data: UpdateNotificationDTO): Promise<Notification> {
