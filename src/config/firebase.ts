@@ -4,11 +4,12 @@ const privateKey =
 if (!admin.apps.length) {
   admin.initializeApp({
     credential: admin.credential.cert({
-      projectId: process.env.FIREBASE_PROJECT_ID,
-      clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+      projectId: "finder-896b2",
+      clientEmail:
+        "firebase-adminsdk-fbsvc@finder-896b2.iam.gserviceaccount.com",
       privateKey: privateKey?.replace(/\\n/g, "\n"),
     }),
-    storageBucket: process.env.FIREBASE_STORAGE_BUCKET,
+    storageBucket: "finder-896b2.firebasestorage.app",
   });
 }
 
@@ -21,4 +22,4 @@ console.log({
 console.log(process.env.FIREBASE_PRIVATE_KEY);
 export const bucket = admin
   .storage()
-  .bucket(process.env.FIREBASE_STORAGE_BUCKET);
+  .bucket("finder-896b2.firebasestorage.app");
