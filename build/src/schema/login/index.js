@@ -61,5 +61,6 @@ exports.updateProfileSchema = zod_1.default.object({
     phone: zod_1.default
         .string()
         .regex(/^\+?\d{10,15}$/, "Invalid phone number")
+        .optional()
         .nullable(),
 });

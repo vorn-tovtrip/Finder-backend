@@ -58,5 +58,6 @@ export const updateProfileSchema = z.object({
   phone: z
     .string()
     .regex(/^\+?\d{10,15}$/, "Invalid phone number")
+    .optional()
     .nullable(),
 });
