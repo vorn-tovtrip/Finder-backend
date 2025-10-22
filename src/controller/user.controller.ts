@@ -31,9 +31,13 @@ export class UserController {
 
   constructor() {
     this.storageService = new StorageService();
-    this.userService = new UserService(PrismaClient, this.storageService);
-    this.badgeService = new BadgeService(PrismaClient);
     this.uploadService = new UploadService(PrismaClient);
+    this.userService = new UserService(
+      PrismaClient,
+      this.storageService,
+      this.uploadService
+    );
+    this.badgeService = new BadgeService(PrismaClient);
     this.reportService = new ReportService(PrismaClient);
   }
 
@@ -206,7 +210,7 @@ export class UserController {
     // Validate JSON body
     const parsed = updateProfileSchema.safeParse(req.body);
     if (parsed.success) {
-      const { username, email, phone, avatar, address } = parsed.data;
+      const { username, email, phone, avatar, address, password } = parsed.data;
 
       let image;
       let finalAvatar = existingUser.profileImages?.[0]?.url ?? "";
@@ -244,6 +248,7 @@ export class UserController {
         email,
         phone,
         address,
+        password,
         avatar: finalAvatar,
       });
 
@@ -298,7 +303,7 @@ export class UserController {
         statusCode: 401,
       });
     }
-    //This case auto login  
+    //This case auto login
     // Generate JWT
     const token = signJwt({ userId: user!.id, email: user!.email });
     await redisClient.set(`access_token:${user!.id}:${token}`, "active", {

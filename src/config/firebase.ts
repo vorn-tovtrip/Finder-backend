@@ -13,13 +13,6 @@ if (!admin.apps.length) {
   });
 }
 
-console.log({
-  length: process.env.FIREBASE_PRIVATE_KEY?.length,
-  firstChars: process.env.FIREBASE_PRIVATE_KEY?.slice(0, 30),
-  lastChars: process.env.FIREBASE_PRIVATE_KEY?.slice(-30),
-});
-
-console.log(process.env.FIREBASE_PRIVATE_KEY);
 export const bucket = admin
   .storage()
   .bucket("finder-896b2.firebasestorage.app");

@@ -35,5 +35,6 @@ export interface UpdateUser {
   phone?: string | null;
   avatar?: string | null;
   address?: string | null;
+  password?: string | null;
 }
 export type UpdateUserPayload = Partial<UpdateUser>;

@@ -8,21 +8,31 @@ import {
   updateReportSchema,
   updateStatusReportSchema,
 } from "../schema";
-import { MessageService, ReportService, UserService } from "../service";
+import {
+  MessageService,
+  ReportService,
+  UploadService,
+  UserService,
+} from "../service";
 import { NotificationService } from "../service/notification.service";
 import { SuccessResponse } from "../utils";
 import { StorageService } from "../lib/firebase/storage";
 export class ReportController {
   private storageService: StorageService;
-
+  private uploadService: UploadService;
   private reportService: ReportService;
   private userService: UserService;
   private messageService: MessageService;
   private notificationService: NotificationService;
   constructor() {
     this.storageService = new StorageService();
+    this.uploadService = new UploadService(PrismaClient);
     this.reportService = new ReportService(PrismaClient);
-    this.userService = new UserService(PrismaClient, this.storageService);
+    this.userService = new UserService(
+      PrismaClient,
+      this.storageService,
+      this.uploadService
+    );
     this.messageService = new MessageService(PrismaClient);
     this.notificationService = new NotificationService(PrismaClient);
   }

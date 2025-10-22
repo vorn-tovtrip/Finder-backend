@@ -159,7 +159,7 @@ class UserController {
             // Validate JSON body
             const parsed = schema_1.updateProfileSchema.safeParse(req.body);
             if (parsed.success) {
-                const { username, email, phone, avatar, address } = parsed.data;
+                const { username, email, phone, avatar, address, password } = parsed.data;
                 let image;
                 let finalAvatar = existingUser.profileImages?.[0]?.url ?? "";
                 let imageId = undefined;
@@ -192,6 +192,7 @@ class UserController {
                     email,
                     phone,
                     address,
+                    password,
                     avatar: finalAvatar,
                 });
                 return (0, utils_1.SuccessResponse)({
@@ -240,7 +241,7 @@ class UserController {
                     statusCode: 401,
                 });
             }
-            //This case auto login  
+            //This case auto login
             // Generate JWT
             const token = (0, utils_1.signJwt)({ userId: user.id, email: user.email });
             await redisClient.set(`access_token:${user.id}:${token}`, "active", {
@@ -391,9 +392,9 @@ class UserController {
             });
         };
         this.storageService = new storage_1.StorageService();
-        this.userService = new service_1.UserService(lib_1.PrismaClient, this.storageService);
-        this.badgeService = new badge_service_1.BadgeService(lib_1.PrismaClient);
         this.uploadService = new service_1.UploadService(lib_1.PrismaClient);
+        this.userService = new service_1.UserService(lib_1.PrismaClient, this.storageService, this.uploadService);
+        this.badgeService = new badge_service_1.BadgeService(lib_1.PrismaClient);
         this.reportService = new service_1.ReportService(lib_1.PrismaClient);
     }
 }

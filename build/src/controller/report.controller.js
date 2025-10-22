@@ -205,8 +205,9 @@ class ReportController {
             });
         };
         this.storageService = new storage_1.StorageService();
+        this.uploadService = new service_1.UploadService(lib_1.PrismaClient);
         this.reportService = new service_1.ReportService(lib_1.PrismaClient);
-        this.userService = new service_1.UserService(lib_1.PrismaClient, this.storageService);
+        this.userService = new service_1.UserService(lib_1.PrismaClient, this.storageService, this.uploadService);
         this.messageService = new service_1.MessageService(lib_1.PrismaClient);
         this.notificationService = new notification_service_1.NotificationService(lib_1.PrismaClient);
     }

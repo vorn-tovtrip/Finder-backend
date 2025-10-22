@@ -2,9 +2,11 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.UserService = void 0;
 const helper_1 = require("../utils/helper");
+const utils_1 = require("../utils");
 class UserService {
-    constructor(prismaClient, storageService) {
+    constructor(prismaClient, storageService, uploadService) {
         this.storageService = storageService;
+        this.uploadService = uploadService;
         this.prismaClient = prismaClient;
     }
     async findAndUpdateFcmToken({ fcmToken, userId, platform, }) {
@@ -126,10 +128,30 @@ class UserService {
         });
     }
     async updateUser(id, payload) {
-        // Filter out null, undefined, or empty string fields
         const dataToUpdate = Object.fromEntries(Object.entries(payload).filter(([_, value]) => value !== null && value !== undefined && value !== ""));
+        // Hash password if present
+        if (dataToUpdate.password) {
+            dataToUpdate.password = await utils_1.BcryptHelper.hashPassword(dataToUpdate.password, 10);
+        }
+        // Handle avatar upload if provided
+        if (payload.avatar) {
+            // Check if user already has a profile image
+            const existingImages = await this.prismaClient.userProfileImage.findMany({
+                where: { userId: id },
+            });
+            if (existingImages.length > 0) {
+                // Update the first image record (or handle multiple if you allow more)
+                await this.uploadService.updateProfileImageById(existingImages[0]?.id, payload.avatar);
+            }
+            else {
+                // Create new profile image
+                await this.uploadService.createProfileImage(payload.avatar, id);
+            }
+        }
+        // Prevent avatar field from updating the user table directly
         delete dataToUpdate.avatar;
-        return await this.prismaClient.user.update({
+        // Perform user data update
+        const updatedUser = await this.prismaClient.user.update({
             where: { id },
             include: {
                 profileImages: {
@@ -139,9 +161,11 @@ class UserService {
                     },
                 },
             },
-            omit: { password: true },
             data: dataToUpdate,
         });
+        // Remove password before returning
+        const { password, ...userWithoutPassword } = updatedUser;
+        return userWithoutPassword;
     }
     async registerUserEmail(params) {
         const user = await this.prismaClient.user.upsert({
